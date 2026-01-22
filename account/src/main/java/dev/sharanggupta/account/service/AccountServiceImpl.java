@@ -23,12 +23,12 @@ import java.util.Random;
 @Transactional
 public class AccountServiceImpl implements AccountService {
 
+    private static final String DEFAULT_ACCOUNT_TYPE = "Savings";
+    private static final String DEFAULT_BRANCH_ADDRESS = "123 Main Street, New York";
+    private static final Random random = new Random();
+
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
-
-    private static final String SAVINGS = "Savings";
-    private static final String ADDRESS = "123 Main Street, New York";
-    private static final Random random = new Random();
 
     @Override
     public void createAccount(CustomerDto customerDto) {
@@ -44,18 +44,17 @@ public class AccountServiceImpl implements AccountService {
         Customer customer = getCustomerByMobileNumber(mobileNumber);
         Account account = getAccountByCustomerId(customer.getCustomerId());
         CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
-        AccountDto accountDto = AccountMapper.mapToAccountDto(account, new AccountDto());
-        customerDto.setAccountDto(accountDto);
+        customerDto.setAccountDto(AccountMapper.mapToAccountDto(account, new AccountDto()));
         return customerDto;
     }
 
     @Override
     public void updateAccount(CustomerDto customerDto) {
         AccountDto accountDto = Optional.ofNullable(customerDto.getAccountDto())
-                .orElseThrow(() -> new AccountDetailsMissingException("Account details are required for an update."));
+                .orElseThrow(() -> new AccountDetailsMissingException("Account details are required for update"));
 
         Long accountNumber = Optional.ofNullable(accountDto.getAccountNumber())
-                .orElseThrow(() -> new AccountDetailsMissingException("Account Number is required for an update."));
+                .orElseThrow(() -> new AccountDetailsMissingException("Account number is required for update"));
 
         Account account = getAccountByAccountNumber(accountNumber);
         Customer customer = getCustomerByCustomerId(account.getCustomerId());
@@ -72,8 +71,9 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private void validateCustomerDoesNotExist(String mobileNumber) {
-        customerRepository.findByMobileNumber(mobileNumber).ifPresent(c -> {
-            throw new CustomerAlreadyExistsException("Customer already registered with given mobileNumber " + mobileNumber);
+        customerRepository.findByMobileNumber(mobileNumber).ifPresent(customer -> {
+            throw new CustomerAlreadyExistsException(
+                    "Customer already registered with mobile number " + mobileNumber);
         });
     }
 
@@ -98,15 +98,15 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private Account createNewAccount(Customer customer) {
-        Account newAccount = new Account();
-        newAccount.setCustomerId(customer.getCustomerId());
-        newAccount.setAccountNumber(generateNewAccountNumber());
-        newAccount.setAccountType(SAVINGS);
-        newAccount.setBranchAddress(ADDRESS);
-        return newAccount;
+        Account account = new Account();
+        account.setCustomerId(customer.getCustomerId());
+        account.setAccountNumber(generateAccountNumber());
+        account.setAccountType(DEFAULT_ACCOUNT_TYPE);
+        account.setBranchAddress(DEFAULT_BRANCH_ADDRESS);
+        return account;
     }
 
-    private long generateNewAccountNumber() {
+    private long generateAccountNumber() {
         return 1000000000L + random.nextInt(900000000);
     }
 }

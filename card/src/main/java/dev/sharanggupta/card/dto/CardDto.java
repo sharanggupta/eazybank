@@ -25,6 +25,7 @@ public class CardDto {
     @PositiveOrZero(message = "Amount used must be zero or positive")
     private int amountUsed;
 
-    @PositiveOrZero(message = "Available amount must be zero or positive")
-    private int availableAmount;
+    public int getAvailableAmount() {
+        return totalLimit - amountUsed;
+    }
 }

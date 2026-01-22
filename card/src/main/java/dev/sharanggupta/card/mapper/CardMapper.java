@@ -11,7 +11,6 @@ public class CardMapper {
         destination.setCardType(source.getCardType());
         destination.setTotalLimit(source.getTotalLimit());
         destination.setAmountUsed(source.getAmountUsed());
-        destination.setAvailableAmount(source.getAvailableAmount());
         return destination;
     }
 

@@ -14,6 +14,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AccountEndToEndTest extends BaseEndToEndTest {
 
+    private static final String API_CREATE_PATH = "/account/api/create";
+    private static final String API_FETCH_PATH = "/account/api/fetch";
+    private static final String API_UPDATE_PATH = "/account/api/update";
+    private static final String API_DELETE_PATH = "/account/api/delete";
+
+    private static final String VALID_NAME = "Test Customer";
+    private static final String VALID_EMAIL = "test@example.com";
+    private static final String VALID_MOBILE_NUMBER = "1234567890";
+    private static final String STATUS_201 = "201";
+    private static final String ACCOUNT_CREATED_MESSAGE = "Account created successfully";
+
     @Autowired
     private AccountRepository accountRepository;
 
@@ -26,68 +37,58 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         customerRepository.deleteAll();
     }
 
-    private static final String API_CREATE_PATH = "/account/api/create";
-    private static final String API_FETCH_PATH = "/account/api/fetch";
-    private static final String API_UPDATE_PATH = "/account/api/update";
-    private static final String API_DELETE_PATH = "/account/api/delete";
-
-    private static final String VALID_NAME = "Test Customer";
-    private static final String VALID_EMAIL = "test@example.com";
-    private static final String VALID_MOBILE_NUMBER = "1234567890";
-    private static final String STATUS_201 = "201";
-
     @Test
     @DisplayName("Should create a new account")
     void shouldCreateAccount() {
-        CustomerDto customer = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
+        CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
 
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customer)
+                .body(customerRequest)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
                 .value(response -> {
                     assertThat(response.getStatusCode()).isEqualTo(STATUS_201);
-                    assertThat(response.getStatusMessage()).isEqualTo("Account created successfully");
+                    assertThat(response.getStatusMessage()).isEqualTo(ACCOUNT_CREATED_MESSAGE);
                 });
     }
 
     @Test
     @DisplayName("Should fetch account by mobile number")
     void shouldFetchAccountByMobileNumber() {
-        CustomerDto customer = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
-        createAccount(customer);
+        CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
+        createAccount(customerRequest);
 
         client.get()
                 .uri(API_FETCH_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CustomerDto.class)
-                .value(fetchedCustomer -> {
-                    assertThat(fetchedCustomer.getName()).isEqualTo(VALID_NAME);
-                    assertThat(fetchedCustomer.getEmail()).isEqualTo(VALID_EMAIL);
-                    assertThat(fetchedCustomer.getMobileNumber()).isEqualTo(VALID_MOBILE_NUMBER);
-                    assertThat(fetchedCustomer.getAccountDto()).isNotNull();
-                    assertThat(fetchedCustomer.getAccountDto().getAccountNumber()).isNotNull();
+                .value(customer -> {
+                    assertThat(customer.getName()).isEqualTo(VALID_NAME);
+                    assertThat(customer.getEmail()).isEqualTo(VALID_EMAIL);
+                    assertThat(customer.getMobileNumber()).isEqualTo(VALID_MOBILE_NUMBER);
+                    assertThat(customer.getAccountDto()).isNotNull();
+                    assertThat(customer.getAccountDto().getAccountNumber()).isNotNull();
                 });
     }
 
     @Test
     @DisplayName("Should update account details")
     void shouldUpdateAccountDetails() {
-        CustomerDto customer = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
-        createAccount(customer);
+        CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
+        createAccount(customerRequest);
 
-        CustomerDto fetchedCustomer = fetchAccount(VALID_MOBILE_NUMBER);
-        fetchedCustomer.setName("Updated Name");
-        fetchedCustomer.getAccountDto().setBranchAddress("456 New Address");
+        CustomerDto existingCustomer = fetchAccount(VALID_MOBILE_NUMBER);
+        existingCustomer.setName("Updated Name");
+        existingCustomer.getAccountDto().setBranchAddress("456 New Address");
 
         client.put()
                 .uri(API_UPDATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(fetchedCustomer)
+                .body(existingCustomer)
                 .exchange()
                 .expectStatus().isNoContent();
 
@@ -99,8 +100,8 @@ class AccountEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should delete account by mobile number")
     void shouldDeleteAccountByMobileNumber() {
-        CustomerDto customer = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
-        createAccount(customer);
+        CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
+        createAccount(customerRequest);
 
         client.delete()
                 .uri(API_DELETE_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
@@ -116,20 +117,20 @@ class AccountEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should reject duplicate account creation")
     void shouldRejectDuplicateAccountCreation() {
-        CustomerDto customer = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
-        createAccount(customer);
+        CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
+        createAccount(customerRequest);
 
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customer)
+                .body(customerRequest)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
 
     @Test
-    @DisplayName("Should not find non-existent account")
-    void shouldNotFindNonExistentAccount() {
+    @DisplayName("Should return not found for non-existent account")
+    void shouldReturnNotFoundForNonExistentAccount() {
         client.get()
                 .uri(API_FETCH_PATH + "?mobileNumber=9999999999")
                 .exchange()
