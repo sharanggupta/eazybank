@@ -8,15 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 class CardEndToEndTest extends BaseEndToEndTest {
 
     private static final String CARD_API_PATH = "/card/api";
@@ -25,17 +19,6 @@ class CardEndToEndTest extends BaseEndToEndTest {
     private static final int DEFAULT_TOTAL_LIMIT = 100000;
     private static final String STATUS_201 = "201";
     private static final String CARD_CREATED_MESSAGE = "Card created successfully";
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-    }
 
     @Autowired
     private CardRepository cardRepository;
