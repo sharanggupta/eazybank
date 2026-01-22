@@ -41,8 +41,6 @@ public class CardController {
 
     @Operation(summary = "Create card", description = "REST API to create a new card")
     @ApiResponse(responseCode = "201", description = "Card created successfully")
-    @ApiResponse(responseCode = "500", description = "Internal server error",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @PostMapping
     public ResponseEntity<ResponseDto> createCard(@Valid @RequestBody CardDto cardDto) {
         cardService.createCard(cardDto);

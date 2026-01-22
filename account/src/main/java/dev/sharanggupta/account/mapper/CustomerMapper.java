@@ -5,17 +5,17 @@ import dev.sharanggupta.account.entity.Customer;
 
 public class CustomerMapper {
 
-    public static CustomerDto mapToCustomerDto(Customer customer, CustomerDto customerDto) {
-        customerDto.setName(customer.getName());
-        customerDto.setEmail(customer.getEmail());
-        customerDto.setMobileNumber(customer.getMobileNumber());
-        return customerDto;
+    public static CustomerDto mapToCustomerDto(Customer source, CustomerDto destination) {
+        destination.setName(source.getName());
+        destination.setEmail(source.getEmail());
+        destination.setMobileNumber(source.getMobileNumber());
+        return destination;
     }
 
-    public static Customer mapToCustomer(CustomerDto customerDto, Customer customer) {
-        customer.setName(customerDto.getName());
-        customer.setEmail(customerDto.getEmail());
-        customer.setMobileNumber(customerDto.getMobileNumber());
-        return customer;
+    public static Customer mapToCustomer(CustomerDto source, Customer destination) {
+        destination.setName(source.getName());
+        destination.setEmail(source.getEmail());
+        destination.setMobileNumber(source.getMobileNumber());
+        return destination;
     }
 }

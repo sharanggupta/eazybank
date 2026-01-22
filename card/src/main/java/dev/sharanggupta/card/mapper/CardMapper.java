@@ -5,23 +5,23 @@ import dev.sharanggupta.card.entity.Card;
 
 public class CardMapper {
 
-    public static CardDto mapToCardDto(Card card, CardDto cardDto) {
-        cardDto.setMobileNumber(card.getMobileNumber());
-        cardDto.setCardNumber(card.getCardNumber());
-        cardDto.setCardType(card.getCardType());
-        cardDto.setTotalLimit(card.getTotalLimit());
-        cardDto.setAmountUsed(card.getAmountUsed());
-        cardDto.setAvailableAmount(card.getAvailableAmount());
-        return cardDto;
+    public static CardDto mapToCardDto(Card source, CardDto destination) {
+        destination.setMobileNumber(source.getMobileNumber());
+        destination.setCardNumber(source.getCardNumber());
+        destination.setCardType(source.getCardType());
+        destination.setTotalLimit(source.getTotalLimit());
+        destination.setAmountUsed(source.getAmountUsed());
+        destination.setAvailableAmount(source.getAvailableAmount());
+        return destination;
     }
 
-    public static Card mapToCard(CardDto cardDto, Card card) {
-        card.setMobileNumber(cardDto.getMobileNumber());
-        card.setCardNumber(cardDto.getCardNumber());
-        card.setCardType(cardDto.getCardType());
-        card.setTotalLimit(cardDto.getTotalLimit());
-        card.setAmountUsed(cardDto.getAmountUsed());
-        card.setAvailableAmount(cardDto.getAvailableAmount());
-        return card;
+    public static Card mapToCard(CardDto source, Card destination) {
+        destination.setMobileNumber(source.getMobileNumber());
+        destination.setCardNumber(source.getCardNumber());
+        destination.setCardType(source.getCardType());
+        destination.setTotalLimit(source.getTotalLimit());
+        destination.setAmountUsed(source.getAmountUsed());
+        destination.setAvailableAmount(source.getAvailableAmount());
+        return destination;
     }
 }

@@ -4,16 +4,18 @@ import dev.sharanggupta.account.dto.AccountDto;
 import dev.sharanggupta.account.entity.Account;
 
 public class AccountMapper {
-    public static AccountDto mapToAccountDto(Account account, AccountDto accountDto){
-        accountDto.setAccountNumber(account.getAccountNumber());
-        accountDto.setAccountType(account.getAccountType());
-        accountDto.setBranchAddress(account.getBranchAddress());
-        return accountDto;
+
+    public static AccountDto mapToAccountDto(Account source, AccountDto destination) {
+        destination.setAccountNumber(source.getAccountNumber());
+        destination.setAccountType(source.getAccountType());
+        destination.setBranchAddress(source.getBranchAddress());
+        return destination;
     }
-    public static Account mapToAccount(AccountDto accountDto, Account account){
-        account.setAccountNumber(accountDto.getAccountNumber());
-        account.setAccountType(accountDto.getAccountType());
-        account.setBranchAddress(accountDto.getBranchAddress());
-        return account;
+
+    public static Account mapToAccount(AccountDto source, Account destination) {
+        destination.setAccountNumber(source.getAccountNumber());
+        destination.setAccountType(source.getAccountType());
+        destination.setBranchAddress(source.getBranchAddress());
+        return destination;
     }
 }
