@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class CardEndToEndTest extends BaseEndToEndTest {
 
-    private static final String CARD_API_PATH = "/api/card";
+    private static final String CARD_API_PATH = "/card/api";
     private static final String VALID_MOBILE_NUMBER = "1234567890";
     private static final String CREDIT_CARD_TYPE = "Credit Card";
     private static final int DEFAULT_TOTAL_LIMIT = 100000;

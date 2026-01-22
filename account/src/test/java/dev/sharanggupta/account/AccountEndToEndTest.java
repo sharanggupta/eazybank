@@ -43,10 +43,10 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         customerRepository.deleteAll();
     }
 
-    private static final String API_CREATE_PATH = "/api/account/create";
-    private static final String API_FETCH_PATH = "/api/account/fetch";
-    private static final String API_UPDATE_PATH = "/api/account/update";
-    private static final String API_DELETE_PATH = "/api/account/delete";
+    private static final String API_CREATE_PATH = "/account/api/create";
+    private static final String API_FETCH_PATH = "/account/api/fetch";
+    private static final String API_UPDATE_PATH = "/account/api/update";
+    private static final String API_DELETE_PATH = "/account/api/delete";
 
     private static final String VALID_NAME = "Test Customer";
     private static final String VALID_EMAIL = "test@example.com";

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Card REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE card details")
 @RestController
-@RequestMapping(path = "/api/card", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/api", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 @AllArgsConstructor
 public class CardController {

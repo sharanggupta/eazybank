@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
     name = "CRUD REST APIs for Account in EazyBank",
     description = "CRUD REST APIs in EazyBank to CREATE, UPDATE, FETCH AND DELETE account details")
 @RestController
-@RequestMapping(path = "/api/account", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/api", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 @AllArgsConstructor
 public class AccountController {
