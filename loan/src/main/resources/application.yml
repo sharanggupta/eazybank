@@ -1,0 +1,25 @@
+server:
+  port: 8090
+  servlet:
+    context-path: /loan
+spring:
+  application:
+    name: loan
+  datasource:
+    url: jdbc:postgresql://localhost:5432/loandb
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  sql:
+    init:
+      mode: always
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,conditions
