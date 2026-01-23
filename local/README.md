@@ -16,9 +16,10 @@ From this directory (`local/`), run:
 docker compose up -d
 ```
 
-This starts a PostgreSQL 17 instance with two databases:
+This starts a PostgreSQL 17 instance with three databases:
 - `accountdb` - for the account microservice (port 8080)
 - `carddb` - for the card microservice (port 9000)
+- `loandb` - for the loan microservice (port 8090)
 
 Connection details:
 - Host: `localhost`
@@ -39,6 +40,12 @@ cd ../account
 **Card Service (port 9000):**
 ```bash
 cd ../card
+./mvnw spring-boot:run
+```
+
+**Loan Service (port 8090):**
+```bash
+cd ../loan
 ./mvnw spring-boot:run
 ```
 
@@ -64,6 +71,10 @@ curl http://localhost:8080/account/actuator/health
 
 # Card service health
 curl http://localhost:9000/card/actuator/health
+# Expected: {"status":"UP"}
+
+# Loan service health
+curl http://localhost:8090/loan/actuator/health
 # Expected: {"status":"UP"}
 ```
 
@@ -107,11 +118,35 @@ curl http://localhost:9000/card/api?mobileNumber=1234567890
 # Update card
 curl -X PUT http://localhost:9000/card/api \
   -H "Content-Type: application/json" \
-  -d '{"cardNumber": "<CARD_NUMBER>", "mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000, "availableAmount": 195000}'
+  -d '{"cardNumber": "<CARD_NUMBER>", "mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
 # Expected: 204 No Content
 
 # Delete card
 curl -X DELETE "http://localhost:9000/card/api?mobileNumber=1234567890"
+# Expected: 204 No Content
+```
+
+### Loan Service API
+
+```bash
+# Create a loan
+curl -X POST http://localhost:8090/loan/api \
+  -H "Content-Type: application/json" \
+  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000}'
+# Expected: {"statusCode":"201","statusMessage":"Loan created successfully"}
+
+# Fetch loan by mobile number
+curl http://localhost:8090/loan/api?mobileNumber=1234567890
+# Expected: JSON with loan details including loanNumber, loanType, totalLoan, amountPaid, outstandingAmount
+
+# Update loan
+curl -X PUT http://localhost:8090/loan/api \
+  -H "Content-Type: application/json" \
+  -d '{"loanNumber": "<LOAN_NUMBER>", "mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+# Expected: 204 No Content
+
+# Delete loan
+curl -X DELETE "http://localhost:8090/loan/api?mobileNumber=1234567890"
 # Expected: 204 No Content
 ```
 
@@ -120,3 +155,4 @@ curl -X DELETE "http://localhost:9000/card/api?mobileNumber=1234567890"
 API documentation is available at:
 - Account: http://localhost:8080/account/swagger-ui.html
 - Card: http://localhost:9000/card/swagger-ui.html
+- Loan: http://localhost:8090/loan/swagger-ui.html
