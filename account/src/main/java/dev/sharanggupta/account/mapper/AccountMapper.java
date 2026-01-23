@@ -13,7 +13,6 @@ public class AccountMapper {
     }
 
     public static Account mapToAccount(AccountDto source, Account destination) {
-        destination.setAccountNumber(source.getAccountNumber());
         destination.setAccountType(source.getAccountType());
         destination.setBranchAddress(source.getBranchAddress());
         return destination;

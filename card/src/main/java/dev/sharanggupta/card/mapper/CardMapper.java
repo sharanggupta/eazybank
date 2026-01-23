@@ -6,8 +6,8 @@ import dev.sharanggupta.card.entity.Card;
 public class CardMapper {
 
     public static CardDto mapToCardDto(Card source, CardDto destination) {
-        destination.setMobileNumber(source.getMobileNumber());
         destination.setCardNumber(source.getCardNumber());
+        destination.setMobileNumber(source.getMobileNumber());
         destination.setCardType(source.getCardType());
         destination.setTotalLimit(source.getTotalLimit());
         destination.setAmountUsed(source.getAmountUsed());
@@ -16,7 +16,6 @@ public class CardMapper {
 
     public static Card mapToCard(CardDto source, Card destination) {
         destination.setMobileNumber(source.getMobileNumber());
-        destination.setCardNumber(source.getCardNumber());
         destination.setCardType(source.getCardType());
         destination.setTotalLimit(source.getTotalLimit());
         destination.setAmountUsed(source.getAmountUsed());
