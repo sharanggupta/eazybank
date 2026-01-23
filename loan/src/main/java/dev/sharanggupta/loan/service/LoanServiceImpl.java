@@ -2,6 +2,7 @@ package dev.sharanggupta.loan.service;
 
 import dev.sharanggupta.loan.dto.LoanDto;
 import dev.sharanggupta.loan.entity.Loan;
+import dev.sharanggupta.loan.exception.LoanAlreadyExistsException;
 import dev.sharanggupta.loan.exception.ResourceNotFoundException;
 import dev.sharanggupta.loan.mapper.LoanMapper;
 import dev.sharanggupta.loan.repository.LoanRepository;
@@ -23,6 +24,7 @@ public class LoanServiceImpl implements LoanService {
 
     @Override
     public void createLoan(LoanDto loanDto) {
+        validateLoanDoesNotExist(loanDto.getMobileNumber());
         Loan loan = LoanMapper.mapToLoan(loanDto, new Loan());
         loan.setLoanNumber(generateLoanNumber());
         loan.setAmountPaid(0);
@@ -47,6 +49,13 @@ public class LoanServiceImpl implements LoanService {
     public void deleteLoan(String mobileNumber) {
         Loan loan = getLoanByMobileNumber(mobileNumber);
         loanRepository.delete(loan);
+    }
+
+    private void validateLoanDoesNotExist(String mobileNumber) {
+        loanRepository.findByMobileNumber(mobileNumber).ifPresent(loan -> {
+            throw new LoanAlreadyExistsException(
+                    "Loan already exists for mobile number " + mobileNumber);
+        });
     }
 
     private Loan getLoanByMobileNumber(String mobileNumber) {

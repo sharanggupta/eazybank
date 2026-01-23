@@ -107,6 +107,29 @@ class LoanEndToEndTest extends BaseEndToEndTest {
                 .expectStatus().isNotFound();
     }
 
+    @Test
+    @DisplayName("Should reject duplicate loan creation")
+    void shouldRejectDuplicateLoanCreation() {
+        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        createLoan(loanRequest);
+
+        client.post()
+                .uri(LOAN_API_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(loanRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    @DisplayName("Should return not found for non-existent loan")
+    void shouldReturnNotFoundForNonExistentLoan() {
+        client.get()
+                .uri(LOAN_API_PATH + "?mobileNumber=9999999999")
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
     private void createLoan(LoanDto loanDto) {
         client.post()
                 .uri(LOAN_API_PATH)

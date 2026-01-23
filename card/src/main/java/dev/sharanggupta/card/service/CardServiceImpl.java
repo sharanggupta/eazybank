@@ -2,6 +2,7 @@ package dev.sharanggupta.card.service;
 
 import dev.sharanggupta.card.dto.CardDto;
 import dev.sharanggupta.card.entity.Card;
+import dev.sharanggupta.card.exception.CardAlreadyExistsException;
 import dev.sharanggupta.card.exception.ResourceNotFoundException;
 import dev.sharanggupta.card.mapper.CardMapper;
 import dev.sharanggupta.card.repository.CardRepository;
@@ -23,6 +24,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void createCard(CardDto cardDto) {
+        validateCardDoesNotExist(cardDto.getMobileNumber());
         Card card = CardMapper.mapToCard(cardDto, new Card());
         card.setCardNumber(generateCardNumber());
         card.setAvailableAmount(cardDto.getTotalLimit());
@@ -48,6 +50,13 @@ public class CardServiceImpl implements CardService {
     public void deleteCard(String mobileNumber) {
         Card card = getCardByMobileNumber(mobileNumber);
         cardRepository.delete(card);
+    }
+
+    private void validateCardDoesNotExist(String mobileNumber) {
+        cardRepository.findByMobileNumber(mobileNumber).ifPresent(card -> {
+            throw new CardAlreadyExistsException(
+                    "Card already exists for mobile number " + mobileNumber);
+        });
     }
 
     private Card getCardByMobileNumber(String mobileNumber) {

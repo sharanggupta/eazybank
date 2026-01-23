@@ -109,6 +109,29 @@ class CardEndToEndTest extends BaseEndToEndTest {
                 .expectStatus().isNotFound();
     }
 
+    @Test
+    @DisplayName("Should reject duplicate card creation")
+    void shouldRejectDuplicateCardCreation() {
+        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        createCard(cardRequest);
+
+        client.post()
+                .uri(CARD_API_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(cardRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    @DisplayName("Should return not found for non-existent card")
+    void shouldReturnNotFoundForNonExistentCard() {
+        client.get()
+                .uri(CARD_API_PATH + "?mobileNumber=9999999999")
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
     private void createCard(CardDto cardDto) {
         client.post()
                 .uri(CARD_API_PATH)
