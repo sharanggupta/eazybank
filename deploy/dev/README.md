@@ -1,6 +1,6 @@
-# Local Development Setup
+# Dev Environment Setup
 
-This directory contains the configuration to run EazyBank microservices locally.
+This directory contains the configuration to run EazyBank microservices in the dev environment.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ This directory contains the configuration to run EazyBank microservices locally.
 
 ## Starting the Database
 
-From this directory (`local/`), run:
+From this directory (`deploy/dev/`), run:
 
 ```bash
 docker compose up -d
@@ -29,23 +29,23 @@ Connection details:
 
 ## Running the Microservices
 
-After starting the database, run each microservice from its directory:
+After starting the database, run each microservice from the repository root:
 
 **Account Service (port 8080):**
 ```bash
-cd ../account
+cd ../../account
 ./mvnw spring-boot:run
 ```
 
 **Card Service (port 9000):**
 ```bash
-cd ../card
+cd ../../card
 ./mvnw spring-boot:run
 ```
 
 **Loan Service (port 8090):**
 ```bash
-cd ../loan
+cd ../../loan
 ./mvnw spring-boot:run
 ```
 
@@ -118,7 +118,7 @@ curl http://localhost:9000/card/api?mobileNumber=1234567890
 # Update card
 curl -X PUT http://localhost:9000/card/api \
   -H "Content-Type: application/json" \
-  -d '{"cardNumber": "<CARD_NUMBER>", "mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+  -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
 # Expected: 204 No Content
 
 # Delete card
@@ -142,7 +142,7 @@ curl http://localhost:8090/loan/api?mobileNumber=1234567890
 # Update loan
 curl -X PUT http://localhost:8090/loan/api \
   -H "Content-Type: application/json" \
-  -d '{"loanNumber": "<LOAN_NUMBER>", "mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
 # Expected: 204 No Content
 
 # Delete loan
