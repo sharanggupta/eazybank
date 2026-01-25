@@ -8,28 +8,54 @@ This directory contains the configuration to run EazyBank microservices in the d
 - Java 25
 - Maven (or use the included Maven wrapper in each service)
 
-## Starting the Database
+## Running Everything in Docker
 
-From this directory (`deploy/dev/`), run:
+### 1. Build the Docker Images
+
+First, build the Docker images for all microservices using the provided script:
+
+```bash
+./build-images.sh
+```
+
+This uses Google Jib to build container images directly to your local Docker daemon.
+
+### 2. Start All Services
 
 ```bash
 docker compose up -d
 ```
 
-This starts a PostgreSQL 17 instance with three databases:
-- `accountdb` - for the account microservice (port 8080)
-- `carddb` - for the card microservice (port 9000)
-- `loandb` - for the loan microservice (port 8090)
+This starts:
+- **eazybank-postgres** - PostgreSQL 17 database
+- **eazybank-account** - Account microservice (port 8080)
+- **eazybank-card** - Card microservice (port 9000)
+- **eazybank-loan** - Loan microservice (port 8090)
 
-Connection details:
-- Host: `localhost`
-- Port: `5432`
-- Username: `postgres`
-- Password: `postgres`
+### 3. Stop All Services
 
-## Running the Microservices
+```bash
+docker compose down
+```
 
-After starting the database, run each microservice from the repository root:
+To also remove the persisted database data:
+```bash
+docker compose down -v
+```
+
+## Running Microservices Locally (Alternative)
+
+If you prefer to run microservices directly on your machine (useful for development with hot-reload):
+
+### 1. Start Only the Database
+
+```bash
+docker compose up -d postgres
+```
+
+### 2. Run Each Microservice
+
+From the repository root:
 
 **Account Service (port 8080):**
 ```bash
@@ -49,16 +75,18 @@ cd ../../loan
 ./mvnw spring-boot:run
 ```
 
-## Stopping the Database
+## Database Details
 
-```bash
-docker compose down
-```
+PostgreSQL 17 with three databases:
+- `accountdb` - for the account microservice
+- `carddb` - for the card microservice
+- `loandb` - for the loan microservice
 
-To also remove the persisted data:
-```bash
-docker compose down -v
-```
+Connection details (when running locally):
+- Host: `localhost`
+- Port: `5432`
+- Username: `postgres`
+- Password: `postgres`
 
 ## Verifying Services
 
