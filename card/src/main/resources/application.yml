@@ -23,3 +23,15 @@ management:
     web:
       exposure:
         include: health,info,conditions
+app:
+  build:
+    version: 1.0.0
+  support:
+    contact:
+      name: Card Service Support Team
+      email: support@card.service.local
+    message: Welcome to Card Service. We are here to help!
+    oncallsupport:
+      - "+1-800-123-4567"
+      - "+1-800-234-5678"
+      - "+1-800-345-6789"
