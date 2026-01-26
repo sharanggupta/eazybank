@@ -91,8 +91,8 @@ jobs:
           # Remove 'v' prefix for app version (e.g., v0.0.1 → 0.0.1)
           APP_VERSION=${VERSION#v}
 
-          # Update pom.xml
-          sed -i "s/<version>.*<\/version>/<version>${APP_VERSION}<\/version>/" ./${{ matrix.service }}/pom.xml
+          # Update pom.xml - only replace <version> AFTER </parent> (project version, not parent version)
+          sed -i "/<\/parent>/,/<\/project>/s/<version>.*<\/version>/<version>${APP_VERSION}<\/version>/" ./${{ matrix.service }}/pom.xml
 
           # Update app-values.yaml for all environments
           for env in dev staging prod; do
