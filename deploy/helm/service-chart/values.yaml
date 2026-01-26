@@ -33,11 +33,11 @@ k8s:
 
   resources:
     requests:
-      memory: "192Mi"
-      cpu: "75m"
+      memory: "224Mi"
+      cpu: "100m"
     limits:
-      memory: "384Mi"
-      cpu: "250m"
+      memory: "448Mi"
+      cpu: "350m"
 
   hpa:
     enabled: false
@@ -73,13 +73,13 @@ k8s:
   probes:
     liveness:
       enabled: true
-      initialDelaySeconds: 30
+      initialDelaySeconds: 120
       periodSeconds: 10
       timeoutSeconds: 5
       failureThreshold: 3
     readiness:
       enabled: true
-      initialDelaySeconds: 10
+      initialDelaySeconds: 90
       periodSeconds: 5
       timeoutSeconds: 3
       failureThreshold: 3
@@ -93,11 +93,11 @@ postgresql:
   storageClassName: ""
   resources:
     requests:
-      memory: "192Mi"
-      cpu: "75m"
+      memory: "224Mi"
+      cpu: "100m"
     limits:
-      memory: "384Mi"
-      cpu: "250m"
+      memory: "448Mi"
+      cpu: "350m"
   credentials:
     username: postgres
     password: "__DB_PASSWORD__"

@@ -4,11 +4,11 @@ k8s:
 
   resources:
     requests:
-      memory: "192Mi"
-      cpu: "75m"
+      memory: "224Mi"
+      cpu: "100m"
     limits:
-      memory: "384Mi"
-      cpu: "250m"
+      memory: "448Mi"
+      cpu: "350m"
 
   hpa:
     enabled: true
@@ -31,19 +31,19 @@ k8s:
   probes:
     liveness:
       enabled: true
-      initialDelaySeconds: 45
+      initialDelaySeconds: 120
       periodSeconds: 10
     readiness:
       enabled: true
-      initialDelaySeconds: 15
+      initialDelaySeconds: 90
       periodSeconds: 5
 
 postgresql:
   storage: 20Gi
   resources:
     requests:
-      memory: "192Mi"
-      cpu: "75m"
+      memory: "224Mi"
+      cpu: "100m"
     limits:
-      memory: "384Mi"
-      cpu: "250m"
+      memory: "448Mi"
+      cpu: "350m"
