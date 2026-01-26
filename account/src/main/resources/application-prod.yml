@@ -1,0 +1,8 @@
+app:
+  support:
+    contact:
+      name: Account Service Production Support
+      email: production-support@eazybank.com
+    message: Production Account Service. For critical issues, contact our on-call support team immediately.
+    oncallsupport:
+      - "+1-800-999-9999"

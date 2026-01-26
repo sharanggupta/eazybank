@@ -1,0 +1,8 @@
+app:
+  support:
+    contact:
+      name: Loan Service Production Support
+      email: production-support@eazybank.com
+    message: Production Loan Service. Loan inquiries are processed during business hours.
+    oncallsupport:
+      - "+1-800-999-9999"
