@@ -4,11 +4,11 @@ k8s:
 
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "200m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "1Gi"
-      cpu: "500m"
+      memory: "384Mi"
+      cpu: "250m"
 
   hpa:
     enabled: false
@@ -33,8 +33,8 @@ postgresql:
   storage: 5Gi
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "200m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "1Gi"
-      cpu: "500m"
+      memory: "384Mi"
+      cpu: "250m"

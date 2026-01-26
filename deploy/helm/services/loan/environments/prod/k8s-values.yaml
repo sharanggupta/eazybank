@@ -1,19 +1,19 @@
 # Loan service - Production environment - Kubernetes configuration
 k8s:
-  replicas: 3
+  replicas: 2
 
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "250m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "1Gi"
-      cpu: "1000m"
+      memory: "384Mi"
+      cpu: "250m"
 
   hpa:
     enabled: true
-    minReplicas: 3
-    maxReplicas: 10
+    minReplicas: 1
+    maxReplicas: 2
     targetCPU: 70
     targetMemory: 80
 
@@ -42,8 +42,8 @@ postgresql:
   storage: 20Gi
   resources:
     requests:
-      memory: "1Gi"
-      cpu: "500m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "2Gi"
-      cpu: "1000m"
+      memory: "384Mi"
+      cpu: "250m"

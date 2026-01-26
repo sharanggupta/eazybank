@@ -29,15 +29,15 @@ app:
 
 # Kubernetes configuration
 k8s:
-  replicas: 1
+  replicas: 2
 
   resources:
     requests:
-      memory: "256Mi"
-      cpu: "100m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "512Mi"
-      cpu: "500m"
+      memory: "384Mi"
+      cpu: "250m"
 
   hpa:
     enabled: false
@@ -93,11 +93,11 @@ postgresql:
   storageClassName: ""
   resources:
     requests:
-      memory: "256Mi"
-      cpu: "100m"
+      memory: "192Mi"
+      cpu: "75m"
     limits:
-      memory: "512Mi"
-      cpu: "500m"
+      memory: "384Mi"
+      cpu: "250m"
   credentials:
     username: postgres
     password: "__DB_PASSWORD__"
