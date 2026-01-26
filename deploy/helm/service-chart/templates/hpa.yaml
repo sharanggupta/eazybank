@@ -1,0 +1,32 @@
+{{- if .Values.k8s.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "eazybank-service.fullname" . }}
+  labels:
+    {{- include "eazybank-service.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "eazybank-service.fullname" . }}
+  minReplicas: {{ .Values.k8s.hpa.minReplicas }}
+  maxReplicas: {{ .Values.k8s.hpa.maxReplicas }}
+  metrics:
+    {{- if .Values.k8s.hpa.targetCPU }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.k8s.hpa.targetCPU }}
+    {{- end }}
+    {{- if .Values.k8s.hpa.targetMemory }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.k8s.hpa.targetMemory }}
+    {{- end }}
+{{- end }}

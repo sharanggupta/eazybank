@@ -1,0 +1,11 @@
+# Loan service defaults
+service:
+  name: loan
+  port: 8090
+  contextPath: /loan
+
+image:
+  repository: eazybank/loan
+
+postgresql:
+  database: loandb

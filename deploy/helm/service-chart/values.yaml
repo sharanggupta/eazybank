@@ -1,0 +1,103 @@
+# Default values for eazybank-service
+# This file contains schema defaults - override in services/<name>/values.yaml
+
+# Service identity
+service:
+  name: ""
+  port: 8080
+  contextPath: /
+
+# Container image
+image:
+  repository: ""
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Application configuration (Spring Boot)
+app:
+  spring:
+    profiles: default
+  datasource:
+    url: ""
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: ""
+    contactEmail: ""
+    message: ""
+  env: {}
+
+# Kubernetes configuration
+k8s:
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPU: 80
+    targetMemory: null
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    host: ""
+    path: /
+    tls: []
+
+  service:
+    type: ClusterIP
+    nodePort: null
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image: postgres:17
+  database: ""
+  storage: 1Gi
+  storageClassName: ""
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"

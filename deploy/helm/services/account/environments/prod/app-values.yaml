@@ -1,0 +1,20 @@
+# Account service - Production environment - Application configuration
+image:
+  tag: "__IMAGE_TAG__"
+
+app:
+  spring:
+    profiles: prod
+  datasource:
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: Account Production Support
+    contactEmail: support@account.eazybank.com
+    message: Welcome to EazyBank Account Service
+  env: {}
+
+postgresql:
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"

@@ -1,98 +1,272 @@
 # EazyBank
 
-A microservices-based banking application built with Spring Boot.
+A microservices-based banking application demonstrating independent, scalable microservices architecture with Spring Boot and Kubernetes.
 
-## Architecture
+## 📋 Overview
 
-EazyBank consists of three independent microservices:
+EazyBank consists of three independent microservices, each with its own database. Each service can be developed, tested, deployed, and scaled independently.
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Account | 8080 | Customer account management |
-| Card | 9000 | Credit/debit card management |
-| Loan | 8090 | Loan management |
+| Service | Port | Context | Database | Purpose |
+|---------|------|---------|----------|---------|
+| Account | 8080 | `/account` | accountdb | Customer account management |
+| Card | 9000 | `/card` | carddb | Credit/debit card management |
+| Loan | 8090 | `/loan` | loandb | Loan management |
 
-Each service has its own PostgreSQL database and can be developed, deployed, and scaled independently.
+## 🛠️ Tech Stack
 
-## Tech Stack
+- **Runtime**: Java 25, Spring Boot 4.0.1
+- **Data**: PostgreSQL 17
+- **Containers**: Docker, Docker Compose
+- **Orchestration**: Kubernetes (k3s), Helm
+- **CI/CD**: GitHub Actions
+- **Testing**: JUnit 5, Testcontainers
+- **Building**: Maven, Google Jib
 
-- Java 25
-- Spring Boot 4.0.1
-- PostgreSQL 17
-- Docker Compose (local development)
-- Testcontainers (integration testing)
+## 🚀 Quick Start
 
-## Getting Started
+### Option 1: Local Development
 
-### Prerequisites
+**Prerequisites**: Java 25, Docker, Docker Compose
 
-- Java 25
-- Docker and Docker Compose
-- Maven (or use the included wrapper)
+```bash
+cd deploy/dev
+docker compose up -d
 
-### Running Locally
+# In separate terminals
+cd account && ./mvnw spring-boot:run
+cd card && ./mvnw spring-boot:run
+cd loan && ./mvnw spring-boot:run
+```
 
-1. Start the databases:
-   ```bash
-   cd deploy/dev
-   docker compose up -d
-   ```
+See [deploy/dev/README.md](deploy/dev/README.md) for details.
 
-2. Run the microservices (in separate terminals):
-   ```bash
-   # Account service
-   cd account && ./mvnw spring-boot:run
+### Option 2: Kubernetes Deployment
 
-   # Card service
-   cd card && ./mvnw spring-boot:run
+**Prerequisites**: Kubernetes cluster (k3s or similar), kubectl configured
 
-   # Loan service
-   cd loan && ./mvnw spring-boot:run
-   ```
+**Setup (5 minutes)**:
 
-3. Verify the services are running:
-   ```bash
-   curl http://localhost:8080/account/actuator/health
-   curl http://localhost:9000/card/actuator/health
-   curl http://localhost:8090/loan/actuator/health
-   ```
+```bash
+# Step 1: Prepare kubeconfig (ensure server IP is not 127.0.0.1)
+cat ~/.kube/config | base64 -w 0
 
-See [deploy/dev/README.md](deploy/dev/README.md) for detailed setup instructions and API examples.
+# Step 2: Add 2 GitHub Secrets
+# KUBE_CONFIG = base64 output from above
+# DB_PASSWORD = openssl rand -base64 32
 
-## API Documentation
+# Step 3: Push to main
+git push origin main
+```
 
-Swagger UI is available for each service:
+GitHub Actions automatically:
+1. Builds Docker images → Pushes to GitHub Container Registry (FREE)
+2. Deploys all 3 services to `eazybank-staging` namespace
+3. Creates Kubernetes services automatically (exposed via NodePort)
+4. Done (~5 minutes)
 
-- Account: http://localhost:8080/account/swagger-ui.html
-- Card: http://localhost:9000/card/swagger-ui.html
-- Loan: http://localhost:8090/loan/swagger-ui.html
+**Access Services** (automatically available via NodePort):
+```bash
+# Find NodePort for each service (auto-assigned from 30000-32767)
+kubectl get svc -n eazybank-staging
 
-## Project Structure
+# Access via: http://CLUSTER_IP:NODEPORT/SERVICE_PATH/swagger-ui.html
+# Example:    http://192.168.1.10:31234/account/swagger-ui.html
+```
+
+**Verify deployment**:
+```bash
+kubectl get pods -n eazybank-staging
+kubectl get svc -n eazybank-staging  # Services auto-created
+kubectl logs -f deployment/account -n eazybank-staging
+```
+
+For advanced setup (staging + production clusters): [deploy/helm/README.md](deploy/helm/README.md)
+
+## 🔄 Development Workflow
+
+### 1. Make Changes
+
+```bash
+# Edit code in your service (e.g., account/)
+cd account
+nano src/main/java/...
+
+# Run tests
+./mvnw test
+```
+
+### 2. Test Locally
+
+```bash
+# Start local environment
+cd deploy/dev && docker compose up -d
+
+# Run service
+cd account && ./mvnw spring-boot:run
+
+# Verify in another terminal
+curl http://localhost:8080/account/swagger-ui.html
+```
+
+### 3. Push to Repository
+
+```bash
+git add .
+git commit -m "feat: add new feature"
+git push origin main
+```
+
+### 4. Automatic Deployment (if k8s configured)
+
+- GitHub Actions automatically:
+  1. Runs tests
+  2. Builds Docker image
+  3. Deploys to Kubernetes cluster
+  4. Verifies health
+
+GitHub Actions workflow file: [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
+
+## 📚 API Documentation
+
+Swagger UI available for each service:
+
+- **Account**: http://localhost:8080/account/swagger-ui.html
+- **Card**: http://localhost:9000/card/swagger-ui.html
+- **Loan**: http://localhost:8090/loan/swagger-ui.html
+
+Health checks:
+```bash
+curl http://localhost:8080/account/actuator/health
+curl http://localhost:9000/card/actuator/health
+curl http://localhost:8090/loan/actuator/health
+```
+
+## 📁 Project Structure
 
 ```
 eazybank/
-├── account/          # Account microservice
-├── card/             # Card microservice
-├── loan/             # Loan microservice
+├── account/                    # Account microservice
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   └── resources/
+│   │   │       ├── application.yml
+│   │   │       └── application-prod.yml
+│   │   └── test/
+│   └── pom.xml
+│
+├── card/                       # Card microservice (same structure)
+├── loan/                       # Loan microservice (same structure)
+│
 └── deploy/
-    ├── dev/          # Local development (Docker Compose)
-    └── production/   # Production deployment (Helm charts)
+    ├── dev/                    # Local development
+    │   ├── docker-compose.yml
+    │   ├── init-databases.sql
+    │   └── README.md
+    │
+    └── helm/                   # Kubernetes deployment
+        ├── service-chart/      # Reusable Helm chart
+        ├── services/           # Per-service configs
+        │   ├── account/
+        │   ├── card/
+        │   └── loan/
+        │       └── environments/
+        │           ├── dev/      (local only)
+        │           ├── staging/
+        │           └── prod/
+        ├── deploy.sh
+        ├── template.sh
+        └── README.md
 ```
 
-## Running Tests
+## ✅ Running Tests
 
-Each microservice has its own test suite using Testcontainers:
+Each service has unit and integration tests using Testcontainers:
 
 ```bash
-# Run tests for a specific service
+# Test a single service
 cd account && ./mvnw test
 
-# Or run all tests
-cd account && ./mvnw test
-cd card && ./mvnw test
-cd loan && ./mvnw test
+# Test all services
+./account/mvnw -f account/pom.xml test
+./card/mvnw -f card/pom.xml test
+./loan/mvnw -f loan/pom.xml test
 ```
 
-## License
+## 🐳 Docker Images
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Images are **automatically built and pushed** by GitHub Actions on push to main.
+
+**Registry**: GitHub Container Registry (GHCR) - **FREE**
+- No Docker Hub account needed
+- Uses GitHub's built-in authentication
+- Automatic builds via GitHub Actions (see `.github/workflows/`)
+
+**Manual local builds** (optional):
+
+```bash
+# Build images locally
+cd account && ./mvnw jib:dockerBuild
+cd card && ./mvnw jib:dockerBuild
+cd loan && ./mvnw jib:dockerBuild
+
+# Verify
+docker images | grep eazybank
+```
+
+## 🔐 Security Notes
+
+- Database passwords use placeholders (`__DB_PASSWORD__`) in configuration
+- GitHub Secrets store sensitive data (kubeconfig, passwords)
+- Kubernetes Secrets used for runtime configuration
+- No hardcoded credentials in source code
+- Each service has own database (data isolation)
+
+## 📖 Additional Documentation
+
+- [deploy/dev/README.md](deploy/dev/README.md) - Local Docker Compose development
+- [deploy/helm/README.md](deploy/helm/README.md) - Advanced Kubernetes configuration
+- [INGRESS_SETUP.md](INGRESS_SETUP.md) - Optional: Custom domain + HTTPS via Ingress (free domain + Let's Encrypt)
+
+## ✨ How It Works (Automatic)
+
+When you push to `main`, GitHub Actions automatically:
+1. Tests all 3 services (JUnit 5 + Testcontainers)
+2. Builds Docker images (Google Jib, 2-3 minutes)
+3. Pushes to GitHub Container Registry (free)
+4. Deploys to Kubernetes via Helm
+5. Services accessible via NodePort on cluster IP
+
+## 💡 Common Tasks
+
+### Deploy to Kubernetes
+
+1. Set up Kubernetes cluster with k3s or similar
+2. Add kubeconfig and password to GitHub Secrets
+3. Push to main
+4. Watch GitHub Actions → workflow completes → services deployed
+
+### Scale a Service
+
+Edit `deploy/helm/services/{service}/environments/{env}/k8s-values.yaml`:
+```yaml
+k8s:
+  replicas: 5  # Change this
+```
+
+### Access Logs
+
+```bash
+# Use kubectl to access cluster logs
+kubectl logs -f deployment/account -n eazybank-staging
+```
+
+### Rollback a Deployment
+
+```bash
+helm rollback account 1 -n eazybank-staging
+```
+
+## 📝 License
+
+Licensed under Apache License 2.0 - see [LICENSE](LICENSE)

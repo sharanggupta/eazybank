@@ -1,0 +1,20 @@
+EazyBank {{ .Values.service.name | title }} Service deployed successfully!
+
+{{- if .Values.k8s.ingress.enabled }}
+Application URL: http{{ if .Values.k8s.ingress.tls }}s{{ end }}://{{ .Values.k8s.ingress.host }}{{ .Values.k8s.ingress.path }}
+{{- else }}
+Get the application URL by running:
+  kubectl port-forward svc/{{ include "eazybank-service.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  Then open: http://localhost:{{ .Values.service.port }}{{ .Values.service.contextPath }}
+{{- end }}
+
+Health check: {{ .Values.service.contextPath }}/actuator/health
+Swagger UI:   {{ .Values.service.contextPath }}/swagger-ui.html
+
+{{- if .Values.postgresql.enabled }}
+
+PostgreSQL:
+  Host: {{ include "eazybank-service.postgresql.fullname" . }}
+  Port: 5432
+  Database: {{ .Values.postgresql.database }}
+{{- end }}

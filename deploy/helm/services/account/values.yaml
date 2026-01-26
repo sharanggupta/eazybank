@@ -1,0 +1,11 @@
+# Account service defaults
+service:
+  name: account
+  port: 8080
+  contextPath: /account
+
+image:
+  repository: eazybank/account
+
+postgresql:
+  database: accountdb

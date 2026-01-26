@@ -1,0 +1,11 @@
+# Card service defaults
+service:
+  name: card
+  port: 9000
+  contextPath: /card
+
+image:
+  repository: eazybank/card
+
+postgresql:
+  database: carddb

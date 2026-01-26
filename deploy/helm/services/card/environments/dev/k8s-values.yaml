@@ -1,0 +1,40 @@
+# Card service - Dev environment - Kubernetes configuration
+k8s:
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+  hpa:
+    enabled: false
+
+  ingress:
+    enabled: false
+
+  service:
+    type: NodePort
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 45
+      periodSeconds: 10
+    readiness:
+      enabled: true
+      initialDelaySeconds: 15
+      periodSeconds: 5
+
+postgresql:
+  storage: 1Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"

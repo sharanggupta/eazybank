@@ -1,0 +1,20 @@
+# Loan service - Dev environment - Application configuration
+image:
+  tag: latest
+
+app:
+  spring:
+    profiles: dev
+  datasource:
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: Loan Dev Support
+    contactEmail: dev-support@loan.service.local
+    message: Welcome to EazyBank Loan Service (Dev)
+  env: {}
+
+postgresql:
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"

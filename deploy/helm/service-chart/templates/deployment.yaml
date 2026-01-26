@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eazybank-service.fullname" . }}
+  labels:
+    {{- include "eazybank-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.k8s.hpa.enabled }}
+  replicas: {{ .Values.k8s.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "eazybank-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.k8s.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "eazybank-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.k8s.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "eazybank-service.serviceAccountName" . }}
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        - name: wait-for-postgresql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "eazybank-service.postgresql.fullname" . }} 5432; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+      {{- end }}
+      containers:
+        - name: {{ .Values.service.name }}
+          {{- with .Values.k8s.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "eazybank-service.fullname" . }}
+            - secretRef:
+                name: {{ include "eazybank-service.fullname" . }}
+          {{- if .Values.k8s.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.service.contextPath }}/actuator/health/liveness
+              port: http
+            initialDelaySeconds: {{ .Values.k8s.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.k8s.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.k8s.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.k8s.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.k8s.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.contextPath }}/actuator/health/readiness
+              port: http
+            initialDelaySeconds: {{ .Values.k8s.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.k8s.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.k8s.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.k8s.probes.readiness.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.k8s.resources | nindent 12 }}
+      {{- with .Values.k8s.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.k8s.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.k8s.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

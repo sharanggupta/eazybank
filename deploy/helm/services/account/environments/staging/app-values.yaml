@@ -1,0 +1,20 @@
+# Account service - Staging environment - Application configuration
+image:
+  tag: "__IMAGE_TAG__"
+
+app:
+  spring:
+    profiles: staging
+  datasource:
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: Account Staging Support
+    contactEmail: staging-support@account.service.local
+    message: Welcome to EazyBank Account Service (Staging)
+  env: {}
+
+postgresql:
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"

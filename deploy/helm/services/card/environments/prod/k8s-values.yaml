@@ -1,0 +1,49 @@
+# Card service - Production environment - Kubernetes configuration
+k8s:
+  replicas: 3
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPU: 70
+    targetMemory: 80
+
+  ingress:
+    enabled: true
+    className: ""
+    annotations: {}
+    host: api.eazybank.com
+    path: /card
+    tls: []
+
+  service:
+    type: ClusterIP
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 45
+      periodSeconds: 10
+    readiness:
+      enabled: true
+      initialDelaySeconds: 15
+      periodSeconds: 5
+
+postgresql:
+  storage: 20Gi
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"

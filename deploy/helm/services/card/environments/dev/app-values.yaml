@@ -1,0 +1,20 @@
+# Card service - Dev environment - Application configuration
+image:
+  tag: latest
+
+app:
+  spring:
+    profiles: dev
+  datasource:
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: Card Dev Support
+    contactEmail: dev-support@card.service.local
+    message: Welcome to EazyBank Card Service (Dev)
+  env: {}
+
+postgresql:
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"

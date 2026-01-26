@@ -1,0 +1,20 @@
+# Card service - Staging environment - Application configuration
+image:
+  tag: "__IMAGE_TAG__"
+
+app:
+  spring:
+    profiles: staging
+  datasource:
+    username: postgres
+    password: "__DB_PASSWORD__"
+  support:
+    contactName: Card Staging Support
+    contactEmail: staging-support@card.service.local
+    message: Welcome to EazyBank Card Service (Staging)
+  env: {}
+
+postgresql:
+  credentials:
+    username: postgres
+    password: "__DB_PASSWORD__"
