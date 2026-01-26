@@ -5,12 +5,15 @@ image:
 app:
   spring:
     profiles: dev
+  build:
+    version: 0.0.1
   datasource:
     username: postgres
     password: "__DB_PASSWORD__"
   support:
     contactName: Card Dev Support
     contactEmail: dev-support@card.service.local
+    contactNumber: "+1-555-0002"
     message: Welcome to EazyBank Card Service (Dev)
   env: {}
 

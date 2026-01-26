@@ -85,6 +85,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update version in pom.xml and values.yaml
+        run: |
+          VERSION=${{ steps.semver.outputs.version }}
+          # Remove 'v' prefix for app version (e.g., v0.0.1 → 0.0.1)
+          APP_VERSION=${VERSION#v}
+
+          # Update pom.xml
+          sed -i "s/<version>.*<\/version>/<version>${APP_VERSION}<\/version>/" ./${{ matrix.service }}/pom.xml
+
+          # Update app-values.yaml for all environments
+          for env in dev staging prod; do
+            VALUES_FILE="./deploy/helm/services/${{ matrix.service }}/environments/${env}/app-values.yaml"
+            if [ -f "$VALUES_FILE" ]; then
+              sed -i "s/version: .*/version: ${APP_VERSION}/" "$VALUES_FILE"
+            fi
+          done
+
+          echo "Updated versions to: ${APP_VERSION}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

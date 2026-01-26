@@ -5,12 +5,15 @@ image:
 app:
   spring:
     profiles: staging
+  build:
+    version: 0.0.1
   datasource:
     username: postgres
     password: "__DB_PASSWORD__"
   support:
     contactName: Account Staging Support
     contactEmail: staging-support@account.service.local
+    contactNumber: "+1-555-0100"
     message: Welcome to EazyBank Account Service (Staging)
   env: {}
 

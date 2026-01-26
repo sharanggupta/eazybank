@@ -1,8 +1,0 @@
-app:
-  support:
-    contact:
-      name: Card Service Production Support
-      email: production-support@eazybank.com
-    message: Production Card Service. For card-related issues, contact our dedicated support line.
-    oncallsupport:
-      - "+1-800-999-9999"

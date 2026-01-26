@@ -2,6 +2,8 @@
 
 A microservices-based banking application demonstrating independent, scalable microservices architecture with Spring Boot and Kubernetes.
 
+[![Build and Deploy](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml)
+
 ## 📋 Overview
 
 EazyBank consists of three independent microservices, each with its own database. Each service can be developed, tested, deployed, and scaled independently.
@@ -64,19 +66,41 @@ GitHub Actions automatically:
 3. Creates Kubernetes services automatically (exposed via NodePort)
 4. Done (~5 minutes)
 
-**Access Services** (automatically available via NodePort):
+**Access Services** (automatically exposed via NodePort):
 ```bash
-# Find NodePort for each service (auto-assigned from 30000-32767)
+# Find NodePort assignments
 kubectl get svc -n eazybank-staging
 
-# Access via: http://CLUSTER_IP:NODEPORT/SERVICE_PATH/swagger-ui.html
-# Example:    http://192.168.1.10:31234/account/swagger-ui.html
+# Output example:
+# NAME      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)             AGE
+# account   NodePort   10.43.x.x     <none>        8080:31234/TCP      5m
+# card      NodePort   10.43.x.x     <none>        9000:31567/TCP      5m
+# loan      NodePort   10.43.x.x     <none>        8090:31890/TCP      5m
+
+# Access Swagger UI in browser:
+# Account: http://YOUR_CLUSTER_IP:31234/account/swagger-ui.html
+# Card:    http://YOUR_CLUSTER_IP:31567/card/swagger-ui.html
+# Loan:    http://YOUR_CLUSTER_IP:31890/loan/swagger-ui.html
 ```
 
-**Verify deployment**:
+**Monitor deployment:**
+
+GitHub Actions workflow status:
+```
+https://github.com/sharanggupta/eazybank/actions
+```
+
+Cluster deployment status:
 ```bash
+# Check pods
 kubectl get pods -n eazybank-staging
-kubectl get svc -n eazybank-staging  # Services auto-created
+kubectl get pods -n eazybank-prod
+
+# Check services
+kubectl get svc -n eazybank-staging
+kubectl get svc -n eazybank-prod
+
+# View logs
 kubectl logs -f deployment/account -n eazybank-staging
 ```
 
@@ -228,14 +252,33 @@ docker images | grep eazybank
 - [deploy/helm/README.md](deploy/helm/README.md) - Advanced Kubernetes configuration
 - [INGRESS_SETUP.md](INGRESS_SETUP.md) - Optional: Custom domain + HTTPS via Ingress (free domain + Let's Encrypt)
 
-## ✨ How It Works (Automatic)
+## ✨ How It Works (Automated Pipeline)
 
-When you push to `main`, GitHub Actions automatically:
-1. Tests all 3 services (JUnit 5 + Testcontainers)
-2. Builds Docker images (Google Jib, 2-3 minutes)
-3. Pushes to GitHub Container Registry (free)
-4. Deploys to Kubernetes via Helm
-5. Services accessible via NodePort on cluster IP
+When you push to `main`, the workflow automatically:
+
+**1. Build** (Automatic)
+- Tests all 3 services (JUnit 5 + Testcontainers)
+- Builds Docker images with Docker buildx (multi-platform: amd64 + arm64)
+- Generates semantic version (v0.0.1, v0.0.2, etc.)
+- Pushes to GitHub Container Registry (free)
+- Watch: https://github.com/sharanggupta/eazybank/actions
+
+**2. Deploy to Staging** (Automatic)
+- Deploys all 3 services to `eazybank-staging` namespace
+- Services exposed via NodePort
+- Access: `http://YOUR_CLUSTER_IP:NODEPORT/service-path/swagger-ui.html`
+
+**3. Deploy to Production** (Manual Approval Required)
+- Pauses and waits for approval
+- Go to: https://github.com/sharanggupta/eazybank/actions
+- Click running workflow → "Review deployments" → "Approve and deploy"
+- Deploys to `eazybank-prod` namespace
+
+**Setup production approval:**
+1. Go to: https://github.com/sharanggupta/eazybank/settings/environments
+2. Create environment: `production`
+3. (Optional) Add required reviewers
+4. Next push will pause at approval gate
 
 ## 💡 Common Tasks
 

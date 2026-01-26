@@ -5,12 +5,15 @@ image:
 app:
   spring:
     profiles: prod
+  build:
+    version: 0.0.1
   datasource:
     username: postgres
     password: "__DB_PASSWORD__"
   support:
     contactName: Loan Production Support
     contactEmail: support@loan.eazybank.com
+    contactNumber: "+1-555-0301"
     message: Welcome to EazyBank Loan Service
   env: {}
 

@@ -5,12 +5,15 @@ image:
 app:
   spring:
     profiles: dev
+  build:
+    version: 0.0.1
   datasource:
     username: postgres
     password: "__DB_PASSWORD__"
   support:
     contactName: Loan Dev Support
     contactEmail: dev-support@loan.service.local
+    contactNumber: "+1-555-0003"
     message: Welcome to EazyBank Loan Service (Dev)
   env: {}
 

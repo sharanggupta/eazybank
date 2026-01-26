@@ -5,12 +5,15 @@ image:
 app:
   spring:
     profiles: prod
+  build:
+    version: 0.0.1
   datasource:
     username: postgres
     password: "__DB_PASSWORD__"
   support:
     contactName: Account Production Support
     contactEmail: support@account.eazybank.com
+    contactNumber: "+1-555-0101"
     message: Welcome to EazyBank Account Service
   env: {}
 
