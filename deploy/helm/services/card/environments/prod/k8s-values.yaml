@@ -1,6 +1,6 @@
 # Card service - Production environment - Kubernetes configuration
 k8s:
-  replicas: 2
+  replicas: 1
 
   resources:
     requests:
