@@ -203,9 +203,11 @@ eazybank/
         └── README.md
 ```
 
-## ✅ Running Tests
+## ✅ Testing the Application
 
-Each service has unit and integration tests using Testcontainers:
+### Unit & Integration Tests
+
+Each service has unit and integration tests using Testcontainers (PostgreSQL in Docker):
 
 ```bash
 # Test a single service
@@ -215,6 +217,180 @@ cd account && ./mvnw test
 ./account/mvnw -f account/pom.xml test
 ./card/mvnw -f card/pom.xml test
 ./loan/mvnw -f loan/pom.xml test
+```
+
+### API Testing Strategies
+
+#### Strategy 1: Local Development (Port 8080, 9000, 8090)
+
+Perfect for rapid iteration and debugging:
+
+```bash
+# Start local dev environment
+cd deploy/dev && docker compose up -d
+
+# In separate terminals, start each service
+cd account && ./mvnw spring-boot:run  # http://localhost:8080/account
+cd card && ./mvnw spring-boot:run     # http://localhost:9000/card
+cd loan && ./mvnw spring-boot:run     # http://localhost:8090/loan
+
+# Health checks
+curl http://localhost:8080/account/actuator/health
+curl http://localhost:9000/card/actuator/health
+curl http://localhost:8090/loan/actuator/health
+
+# Swagger UI
+# http://localhost:8080/account/swagger-ui.html
+# http://localhost:9000/card/swagger-ui.html
+# http://localhost:8090/loan/swagger-ui.html
+```
+
+#### Strategy 2: Staging Environment (NodePort - External Access)
+
+Staging services are exposed via **NodePort** for testing from outside the cluster:
+
+```bash
+# 1. Get NodePort assignments
+kubectl get svc -n eazybank-staging
+
+# Example output:
+# NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+# account   NodePort   10.43.46.248    <none>        8080:30874/TCP      5m
+# card      NodePort   10.43.158.146   <none>        9000:31234/TCP      5m
+# loan      NodePort   10.43.200.66    <none>        8090:31567/TCP      5m
+
+# Extract specific NodePort with grep (example: account)
+ACCOUNT_PORT=$(kubectl get svc account -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
+CARD_PORT=$(kubectl get svc card -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
+LOAN_PORT=$(kubectl get svc loan -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
+
+echo "Account: <CLUSTER_IP>:$ACCOUNT_PORT"
+echo "Card: <CLUSTER_IP>:$CARD_PORT"
+echo "Loan: <CLUSTER_IP>:$LOAN_PORT"
+
+# 2. Test health
+curl http://<CLUSTER_IP>:$ACCOUNT_PORT/account/actuator/health
+curl http://<CLUSTER_IP>:$CARD_PORT/card/actuator/health
+curl http://<CLUSTER_IP>:$LOAN_PORT/loan/actuator/health
+
+# 3. Access Swagger UI in browser
+# http://<CLUSTER_IP>:30874/account/swagger-ui.html
+# http://<CLUSTER_IP>:31234/card/swagger-ui.html
+# http://<CLUSTER_IP>:31567/loan/swagger-ui.html
+```
+
+#### Strategy 3: Production Environment (ClusterIP - Port-Forward)
+
+Production services use **ClusterIP** (internal only), but you can test via port-forward:
+
+```bash
+# 1. Get service names and ports
+kubectl get svc -n eazybank-prod
+
+# Example output:
+# NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+# account   ClusterIP  10.43.36.251    <none>        8080/TCP   3m
+# card      ClusterIP  10.43.102.123   <none>        9000/TCP   2m
+# loan      ClusterIP  10.43.200.66    <none>        8090/TCP   1m
+
+# 2. Port-forward (temporary tunnel to test)
+kubectl port-forward svc/account 8080:8080 -n eazybank-prod &
+kubectl port-forward svc/card 9000:9000 -n eazybank-prod &
+kubectl port-forward svc/loan 8090:8090 -n eazybank-prod &
+
+# 3. Test via localhost (port-forwarded)
+curl http://localhost:8080/account/actuator/health
+curl http://localhost:9000/card/actuator/health
+curl http://localhost:8090/loan/actuator/health
+
+# Access Swagger UI
+# http://localhost:8080/account/swagger-ui.html
+# http://localhost:9000/card/swagger-ui.html
+# http://localhost:8090/loan/swagger-ui.html
+
+# 4. Stop port-forward (cleanup)
+killall kubectl  # or kill individual PID
+```
+
+#### Strategy 4: Production with Ingress (Domain-based - Optional)
+
+If ingress is configured with a custom domain:
+
+```bash
+# Check ingress configuration
+kubectl get ingress -n eazybank-prod
+
+# Example output:
+# NAME                           CLASS   HOSTS               ADDRESS          PORTS   AGE
+# account-eazybank-service       nginx   api.eazybank.com    <INGRESS_IP>     80      3m
+# card-eazybank-service          nginx   api.eazybank.com    <INGRESS_IP>     80      2m
+# loan-eazybank-service          nginx   api.eazybank.com    <INGRESS_IP>     80      1m
+
+# Health checks (requires DNS or /etc/hosts entry)
+curl http://api.eazybank.com/account/actuator/health
+curl http://api.eazybank.com/card/actuator/health
+curl http://api.eazybank.com/loan/actuator/health
+
+# Or with HTTPS (if Let's Encrypt configured)
+curl https://api.eazybank.com/account/actuator/health
+
+# Swagger UI
+# http://api.eazybank.com/account/swagger-ui.html
+# http://api.eazybank.com/card/swagger-ui.html
+# http://api.eazybank.com/loan/swagger-ui.html
+```
+
+### Health Checks & Status Verification
+
+All services provide health check endpoints:
+
+```bash
+# Liveness probe (is service running?)
+curl -s http://localhost:8080/account/actuator/health/liveness | jq
+
+# Readiness probe (is service ready to accept traffic?)
+curl -s http://localhost:8080/account/actuator/health/readiness | jq
+
+# Full health info
+curl -s http://localhost:8080/account/actuator/health | jq
+
+# Check specific health indicators
+curl -s http://localhost:8080/account/actuator/health/db | jq
+curl -s http://localhost:8080/account/actuator/health/diskSpace | jq
+```
+
+### Performance Monitoring
+
+```bash
+# Pod resource usage
+kubectl top pods -n eazybank-staging
+kubectl top pods -n eazybank-prod
+
+# HPA scaling status
+kubectl get hpa -n eazybank-staging -w
+kubectl get hpa -n eazybank-prod -w
+
+# Watch replicas scale based on load
+watch kubectl get deployment -n eazybank-prod
+
+# Check metrics
+kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/eazybank-staging/pods/*/cpu_usage_seconds_total
+```
+
+### Troubleshooting
+
+```bash
+# Check pod logs
+kubectl logs -f deployment/account -n eazybank-staging
+
+# Describe pod for events
+kubectl describe pod <POD_NAME> -n eazybank-staging
+
+# Check service endpoints
+kubectl get endpoints account -n eazybank-staging
+
+# Check if pod is passing readiness probe
+kubectl get pod <POD_NAME> -n eazybank-staging -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
 ```
 
 ## 🐳 Docker Images
