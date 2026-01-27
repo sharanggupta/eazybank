@@ -43,8 +43,8 @@ k8s:
     enabled: false
     minReplicas: 1
     maxReplicas: 5
-    targetCPU: 80
-    targetMemory: null
+    targetCPU: 95
+    targetMemory: 95
 
   ingress:
     enabled: false
