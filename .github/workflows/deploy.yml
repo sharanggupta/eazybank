@@ -25,6 +25,11 @@ on:
       - 'card/**'
       - 'loan/**'
       - '.github/workflows/deploy.yml'
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
     inputs:
       skip_staging:
