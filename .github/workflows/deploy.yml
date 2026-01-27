@@ -20,11 +20,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'account/**'
-      - 'card/**'
-      - 'loan/**'
-      - '.github/workflows/deploy.yml'
     paths-ignore:
       - '**.md'
       - '**.txt'
