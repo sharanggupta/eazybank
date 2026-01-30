@@ -56,8 +56,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "eazybank-service.fullname" . }}
+            {{- if or .Values.app.datasource.url .Values.postgresql.enabled }}
             - secretRef:
                 name: {{ include "eazybank-service.fullname" . }}
+            {{- end }}
           {{- if .Values.k8s.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
