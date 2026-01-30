@@ -63,7 +63,7 @@ spec:
           {{- if .Values.k8s.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.service.contextPath }}/actuator/health/liveness
+              path: {{ if .Values.service.contextPath }}{{ .Values.service.contextPath }}{{ end }}/actuator/health/liveness
               port: http
             initialDelaySeconds: {{ .Values.k8s.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.k8s.probes.liveness.periodSeconds }}
@@ -73,7 +73,7 @@ spec:
           {{- if .Values.k8s.probes.readiness.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.service.contextPath }}/actuator/health/readiness
+              path: {{ if .Values.service.contextPath }}{{ .Values.service.contextPath }}{{ end }}/actuator/health/readiness
               port: http
             initialDelaySeconds: {{ .Values.k8s.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.k8s.probes.readiness.periodSeconds }}
