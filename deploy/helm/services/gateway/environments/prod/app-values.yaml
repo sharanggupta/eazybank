@@ -1,9 +1,11 @@
-service:
-  name: gateway
+image:
+  tag: "__IMAGE_TAG__"
 
 app:
   spring:
     profiles: prod
+  build:
+    version: 0.0.1
   env:
     SERVICES_ACCOUNT_URL: "http://account:8080"
     SERVICES_CARD_URL: "http://card:9000"
