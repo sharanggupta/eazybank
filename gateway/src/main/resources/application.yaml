@@ -1,0 +1,35 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: gateway
+  jackson:
+    default-property-inclusion: non_null
+  cloud:
+    gateway:
+      mvc:
+        routes:
+          - id: account-service
+            uri: ${services.account-url}
+            predicates:
+              - Path=/account/**
+          - id: card-service
+            uri: ${services.card-url}
+            predicates:
+              - Path=/card/**
+          - id: loan-service
+            uri: ${services.loan-url}
+            predicates:
+              - Path=/loan/**
+
+services:
+  account-url: http://localhost:8080
+  card-url: http://localhost:9000
+  loan-url: http://localhost:8090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

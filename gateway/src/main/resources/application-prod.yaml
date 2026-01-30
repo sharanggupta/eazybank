@@ -1,0 +1,10 @@
+services:
+  account-url: http://account:8080
+  card-url: http://card:9000
+  loan-url: http://loan:8090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
