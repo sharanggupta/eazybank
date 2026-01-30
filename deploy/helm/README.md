@@ -5,30 +5,28 @@ Reference guide for deploying EazyBank microservices to Kubernetes using Helm.
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Kubernetes Cluster                           │
-├─────────────────────────────────────────────────────────────────────┤
-│  Namespace: eazybank-staging          Namespace: eazybank-prod      │
-│  ┌─────────────────────────┐          ┌─────────────────────────┐   │
-│  │ account                 │          │ account                 │   │
-│  │  ├── Deployment         │          │  ├── Deployment (HPA)   │   │
-│  │  ├── Service (NodePort) │          │  ├── Service (NodePort) │   │
-│  │  └── ConfigMap/Secret   │          │  └── ConfigMap/Secret   │   │
-│  │                         │          │                         │   │
-│  │ account-postgresql      │          │ account-postgresql      │   │
-│  │  ├── StatefulSet        │          │  ├── StatefulSet        │   │
-│  │  ├── PVC (5Gi)          │          │  ├── PVC (20Gi)         │   │
-│  │  └── Secret             │          │  └── Secret             │   │
-│  └─────────────────────────┘          └─────────────────────────┘   │
-│                                                                     │
-│  (Same structure for card and loan services)                        │
-└─────────────────────────────────────────────────────────────────────┘
+                        ┌──────────────────────┐
+        Clients ──────► │   Gateway (NodePort)  │
+                        │   :8000               │
+                        └──────────┬────────────┘
+                                   │
+                  ┌────────────────┼────────────────┐
+                  ▼                ▼                ▼
+           ┌────────────┐  ┌────────────┐  ┌────────────┐
+           │  Account   │  │    Card    │  │    Loan    │  (ClusterIP)
+           │  :8080     │  │   :9000    │  │   :8090    │
+           └─────┬──────┘  └─────┬──────┘  └─────┬──────┘
+                 ▼               ▼               ▼
+           ┌────────────┐  ┌────────────┐  ┌────────────┐
+           │ accountdb  │  │   carddb   │  │   loandb   │  (PostgreSQL 17)
+           │ StatefulSet│  │ StatefulSet│  │ StatefulSet│
+           └────────────┘  └────────────┘  └────────────┘
 ```
 
-Each microservice:
-- Owns its own PostgreSQL database (true independence)
-- Can be deployed, scaled, updated independently
-- Has separate configurations per environment
+- **Gateway** is the single entry point — exposed via NodePort
+- **Backend services** (account, card, loan) use ClusterIP — only reachable within the cluster
+- Each backend service owns its own PostgreSQL database
+- All services can be deployed, scaled, and updated independently
 
 ## Directory Structure
 
@@ -59,7 +57,8 @@ deploy/helm/
     │           ├── app-values.yaml     # App config
     │           └── k8s-values.yaml     # K8s resources
     ├── card/
-    └── loan/
+    ├── loan/
+    └── gateway/
 ```
 
 ## Helm Values (3-Level Inheritance)
@@ -68,13 +67,50 @@ deploy/helm/
 - Schema and defaults for all services
 
 **Level 2: Service identity** (`services/{service}/values.yaml`)
-- Service name, port, context path, database name
+- Service name, port, context path, database name, downstream URLs
 
 **Level 3: Environment overrides** (`services/{service}/environments/{env}/`)
-- `app-values.yaml` - Spring Boot config, replicas, storage
-- `k8s-values.yaml` - K8s resources, HPA, ingress, probes
+- `app-values.yaml` — Spring Boot config, version
+- `k8s-values.yaml` — K8s resources, HPA, ingress, service type, probes
 
 Final values = Chart defaults + Service identity + Environment overrides
+
+## Service Configuration
+
+### Gateway
+
+The gateway has no database (`postgresql.enabled: false`) and routes to backend services via environment variables:
+
+```yaml
+# services/gateway/values.yaml
+service:
+  name: gateway
+  port: 8000
+
+app:
+  env:
+    SERVICES_ACCOUNT_URL: "http://account:8080"
+    SERVICES_CARD_URL: "http://card:9000"
+    SERVICES_LOAN_URL: "http://loan:8090"
+
+postgresql:
+  enabled: false
+```
+
+### Backend Services (Account, Card, Loan)
+
+Each has its own database and uses ClusterIP:
+
+```yaml
+# services/account/values.yaml
+service:
+  name: account
+  port: 8080
+  contextPath: /account
+
+postgresql:
+  database: accountdb
+```
 
 ## Configuration Reference
 
@@ -107,26 +143,60 @@ k8s:
 
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "200m"
+      memory: "224Mi"
+      cpu: "100m"
     limits:
-      memory: "1Gi"
-      cpu: "500m"
+      memory: "448Mi"
+      cpu: "350m"
 
   hpa:
     enabled: false                       # Horizontal Pod Autoscaler
-    minReplicas: 2
-    maxReplicas: 10
-    targetCPU: 70
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPU: 95
+    targetMemory: 95
 
   ingress:
-    enabled: false                       # Optional: custom domain + HTTPS
+    enabled: false
     className: nginx
     host: custom.domain.com
-    path: /account
 
   service:
-    type: NodePort                       # Direct access via cluster IP:port
+    type: NodePort                       # Gateway: NodePort, Backend: ClusterIP
+```
+
+## Manual Deployment
+
+If you need to deploy without GitHub Actions:
+
+```bash
+# Deploy a backend service
+helm upgrade --install account ./deploy/helm/service-chart \
+  --namespace eazybank-staging \
+  --set image.repository=ghcr.io/sharanggupta/eazybank/account \
+  --set image.tag=$IMAGE_TAG \
+  --set app.datasource.password=$DB_PASSWORD \
+  --set postgresql.credentials.password=$DB_PASSWORD \
+  -f ./deploy/helm/services/account/values.yaml \
+  -f ./deploy/helm/services/account/environments/staging/app-values.yaml \
+  -f ./deploy/helm/services/account/environments/staging/k8s-values.yaml
+
+# Deploy the gateway (no database secrets needed)
+helm upgrade --install gateway ./deploy/helm/service-chart \
+  --namespace eazybank-staging \
+  --set image.repository=ghcr.io/sharanggupta/eazybank/gateway \
+  --set image.tag=$IMAGE_TAG \
+  -f ./deploy/helm/services/gateway/values.yaml \
+  -f ./deploy/helm/services/gateway/environments/staging/app-values.yaml \
+  -f ./deploy/helm/services/gateway/environments/staging/k8s-values.yaml
+
+# Or use the deploy script
+./deploy.sh gateway staging
+./deploy.sh account staging
+
+# Verify
+kubectl get pods -n eazybank-staging
+kubectl get svc -n eazybank-staging
 ```
 
 ## Production Considerations
@@ -134,16 +204,16 @@ k8s:
 ### Data Persistence
 
 Database PVCs are configured with:
-- `whenDeleted: Retain` - PVC survives `helm uninstall`
-- `whenScaled: Retain` - PVC survives pod scale-down
-- Automatic snapshots recommended for backups
+- `whenDeleted: Retain` — PVC survives `helm uninstall`
+- `whenScaled: Retain` — PVC survives pod scale-down
 
 ### Security
 
 - Passwords stored as Kubernetes Secrets (not ConfigMaps)
-- Never commit real passwords - use `__PLACEHOLDER__` syntax
-- Each service isolated: separate namespace, separate database
-- RBAC least-privilege recommended
+- Never commit real passwords — use `__PLACEHOLDER__` syntax
+- Each service isolated: separate database
+- Backend services use ClusterIP — not externally accessible
+- Only the gateway is exposed via NodePort
 
 ### Scaling
 
@@ -157,40 +227,6 @@ Edit `k8s-values.yaml` → replicas OR enable HPA
 Enable HPA + install metrics-server:
 ```bash
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-```
-
-### High Availability
-
-Production should enable:
-- HPA (Horizontal Pod Autoscaler)
-- Multiple replicas (min 3)
-- Pod disruption budgets
-- Node affinity for spread
-- Resource requests/limits
-
-## Manual Deployment (If Needed)
-
-If you need to deploy without GitHub Actions:
-
-```bash
-# Set environment variables
-export DB_PASSWORD="your-secure-password"
-export IMAGE_TAG="v0.0.1"
-
-# Deploy single service
-helm upgrade --install account ./deploy/helm/service-chart \
-  --namespace eazybank-staging \
-  --set image.repository=ghcr.io/sharanggupta/eazybank/account \
-  --set image.tag=$IMAGE_TAG \
-  --set app.datasource.password=$DB_PASSWORD \
-  --set postgresql.credentials.password=$DB_PASSWORD \
-  -f ./deploy/helm/services/account/values.yaml \
-  -f ./deploy/helm/services/account/environments/staging/app-values.yaml \
-  -f ./deploy/helm/services/account/environments/staging/k8s-values.yaml
-
-# Verify
-kubectl get pods -n eazybank-staging
-kubectl get svc -n eazybank-staging
 ```
 
 ## Troubleshooting
@@ -229,8 +265,6 @@ helm upgrade --install account ./deploy/helm/service-chart \
 
 ## See Also
 
-- [README.md](../../README.md) - Quick start and overview
-- [DEPLOYMENT.md](../../DEPLOYMENT.md) - Operational tasks (logs, scale, rollback)
-- [INGRESS_SETUP.md](../../INGRESS_SETUP.md) - Optional custom domain + HTTPS
-- [deploy/dev/README.md](../dev/README.md) - Local Docker Compose development
-- [.github/workflows/README.md](../../.github/workflows/README.md) - CI/CD pipeline
+- [README.md](../../README.md) — Quick start and overview
+- [deploy/dev/README.md](../dev/README.md) — Local Docker Compose development
+- [.github/workflows/deploy.yml](../../.github/workflows/deploy.yml) — CI/CD pipeline

@@ -8,16 +8,16 @@ Practical guide for managing EazyBank deployments. For initial setup, see [READM
 
 ```bash
 # Edit code
-nano account/src/main/java/...
+nano gateway/src/main/java/...
 
 # Test locally
-cd account && ./mvnw test
+cd gateway && ./mvnw test
 
 # Commit and push
-git commit -am "Update account service"
+git commit -am "Update gateway service"
 git push origin main
 
-# Services automatically deploy to eazybank-staging
+# All 4 services automatically deploy to eazybank-staging
 # Watch: https://github.com/sharanggupta/eazybank/actions
 ```
 
@@ -37,13 +37,12 @@ kubectl describe pod POD_NAME -n eazybank-staging
 ### View Logs
 
 ```bash
-# Account service
+# Gateway
+kubectl logs -f deployment/gateway -n eazybank-staging
+
+# Backend services
 kubectl logs -f deployment/account -n eazybank-staging
-
-# Card service
 kubectl logs -f deployment/card -n eazybank-staging
-
-# Loan service
 kubectl logs -f deployment/loan -n eazybank-staging
 
 # PostgreSQL logs
@@ -54,36 +53,40 @@ kubectl logs -f statefulset/account-postgresql -n eazybank-staging
 
 ```bash
 # Edit values for permanent scaling
-nano deploy/helm/services/account/environments/staging/k8s-values.yaml
+nano deploy/helm/services/gateway/environments/staging/k8s-values.yaml
 # Change: k8s.replicas: N
 
 # Or scale immediately
-kubectl scale deployment account --replicas=3 -n eazybank-staging
+kubectl scale deployment gateway --replicas=3 -n eazybank-staging
 ```
 
-### Find NodePort for Services
+### Access the Gateway
 
-Services are automatically exposed via NodePort. To find the actual port:
+The gateway is the only externally exposed service (NodePort). Backend services use ClusterIP and are only reachable within the cluster.
 
 ```bash
-# List services and their ports
-kubectl get svc -n eazybank-staging
+# Get the gateway NodePort
+kubectl get svc gateway -n eazybank-staging
 
 # Example output:
-# NAME            TYPE       CLUSTER-IP   EXTERNAL-IP   PORT(S)           AGE
-# account         NodePort   10.x.x.x     <none>        8080:31234/TCP    5m
+# NAME      TYPE       CLUSTER-IP   EXTERNAL-IP   PORT(S)          AGE
+# gateway   NodePort   10.x.x.x    <none>        8000:31234/TCP   5m
 #
-# Access via: http://CLUSTER_IP:31234/account/swagger-ui.html
+# Access via: http://CLUSTER_IP:31234/swagger-ui.html
+
+# Backend services (ClusterIP — debug via port-forward)
+kubectl port-forward svc/account 8080:8080 -n eazybank-staging &
+curl http://localhost:8080/account/actuator/health
 ```
 
 ### Rollback a Deployment
 
 ```bash
 # View history
-helm history account -n eazybank-staging
+helm history gateway -n eazybank-staging
 
 # Rollback to previous version
-helm rollback account 1 -n eazybank-staging
+helm rollback gateway 1 -n eazybank-staging
 ```
 
 ### Approve Production Deployment
@@ -134,7 +137,7 @@ kubectl describe pod POD_NAME -n eazybank-staging
 # Check Events section for details
 ```
 
-### Connection Refused / Cannot Access Services
+### Connection Refused / Cannot Access Gateway
 
 **Cause**: Kubeconfig server IP is 127.0.0.1 (localhost).
 **Fix**: Edit kubeconfig to use actual server IP:
@@ -149,7 +152,7 @@ kubectl config view  # Check current context
 **Fix**:
 - Ensure pushing to `main` branch
 - Check: Settings → Actions → Runners
-- Manually trigger: Actions → Deploy to Hetzner → Run workflow
+- Manually trigger: Actions → Build and Deploy → Run workflow
 
 ### GitHub Secrets Not Being Used
 
