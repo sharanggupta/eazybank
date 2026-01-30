@@ -21,7 +21,7 @@ k8s:
     enabled: false
 
   service:
-    type: NodePort
+    type: ClusterIP
 
   probes:
     liveness:

@@ -21,4 +21,4 @@ k8s:
     tls: []
 
   service:
-    type: ClusterIP
+    type: NodePort
