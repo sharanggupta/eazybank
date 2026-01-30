@@ -58,5 +58,19 @@ services:
       postgres:
         condition: service_healthy
 
+  gateway:
+    image: eazybank/gateway
+    container_name: eazybank-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      SERVICES_ACCOUNT_URL: http://account:8080
+      SERVICES_CARD_URL: http://card:9000
+      SERVICES_LOAN_URL: http://loan:8090
+    depends_on:
+      - account
+      - card
+      - loan
+
 volumes:
   postgres_data:

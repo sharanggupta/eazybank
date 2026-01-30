@@ -53,7 +53,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [account, card, loan]
+        service: [account, card, loan, gateway]
 
     outputs:
       image_tag: ${{ steps.semver.outputs.version }}
@@ -204,6 +204,17 @@ jobs:
             -f ./deploy/helm/services/loan/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/staging/k8s-values.yaml
 
+      - name: Deploy gateway to staging
+        run: |
+          helm upgrade --install gateway ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gateway \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            -f ./deploy/helm/services/gateway/values.yaml \
+            -f ./deploy/helm/services/gateway/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/gateway/environments/staging/k8s-values.yaml
+
       - name: Verify staging deployment
         run: |
           kubectl get all -n eazybank-staging
@@ -325,6 +336,17 @@ jobs:
             -f ./deploy/helm/services/loan/values.yaml \
             -f ./deploy/helm/services/loan/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/prod/k8s-values.yaml
+
+      - name: Deploy gateway to production
+        run: |
+          helm upgrade --install gateway ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gateway \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            -f ./deploy/helm/services/gateway/values.yaml \
+            -f ./deploy/helm/services/gateway/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/gateway/environments/prod/k8s-values.yaml
 
       - name: Verify production deployment
         run: |

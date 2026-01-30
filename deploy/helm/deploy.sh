@@ -15,7 +15,7 @@ fi
 if [[ -z "$SERVICE" || -z "$ENVIRONMENT" ]]; then
     echo "Usage: ./deploy.sh <service> <environment> [--dry-run]"
     echo ""
-    echo "Services: account, card, loan"
+    echo "Services: account, card, loan, gateway"
     echo "Environments: dev, staging, prod"
     echo ""
     echo "Examples:"

@@ -31,6 +31,7 @@ This starts:
 - **eazybank-account** - Account microservice (port 8080)
 - **eazybank-card** - Card microservice (port 9000)
 - **eazybank-loan** - Loan microservice (port 8090)
+- **eazybank-gateway** - API Gateway (port 8000)
 
 ### 3. Stop All Services
 
@@ -75,6 +76,14 @@ cd ../../loan
 ./mvnw spring-boot:run
 ```
 
+**Gateway (port 8000):**
+```bash
+cd ../../gateway
+./mvnw spring-boot:run
+```
+
+When running locally, the gateway connects to services on their default localhost ports (account:8080, card:9000, loan:8090) as configured in `application.yaml`.
+
 ## Database Details
 
 PostgreSQL 17 with three databases:
@@ -93,94 +102,149 @@ Connection details (when running locally):
 ### Health Checks
 
 ```bash
-# Account service health
+# Gateway health
+curl http://localhost:8000/actuator/health
+# Expected: {"status":"UP"}
+
+# Account service health (direct)
 curl http://localhost:8080/account/actuator/health
 # Expected: {"status":"UP"}
 
-# Card service health
+# Card service health (direct)
 curl http://localhost:9000/card/actuator/health
 # Expected: {"status":"UP"}
 
-# Loan service health
+# Loan service health (direct)
 curl http://localhost:8090/loan/actuator/health
 # Expected: {"status":"UP"}
 ```
 
-### Account Service API
+### Gateway API
 
+The gateway exposes aggregated customer APIs and proxies downstream service APIs.
+
+**Customer lifecycle:**
 ```bash
-# Create an account
+# Onboard a customer
+curl -X POST http://localhost:8000/api/customer \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Doe", "email": "john@example.com", "mobileNumber": "1234567890"}'
+# Expected: {"statusCode":"201","statusMessage":"Customer onboarded successfully"}
+
+# Get customer details (aggregated account, card, and loan)
+curl http://localhost:8000/api/customer/1234567890
+# Expected: JSON with mobileNumber, account, card, and loan details
+
+# Update customer profile
+curl -X PUT http://localhost:8000/api/customer/1234567890 \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Updated", "email": "john.updated@example.com"}'
+# Expected: 204 No Content
+
+# Offboard customer
+curl -X DELETE http://localhost:8000/api/customer/1234567890
+# Expected: 204 No Content
+```
+
+**Card management (via gateway):**
+```bash
+# Issue a card
+curl -X POST http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
+# Expected: {"statusCode":"201","statusMessage":"Card issued successfully"}
+
+# Get card details
+curl http://localhost:8000/api/customer/1234567890/card
+# Expected: JSON with card details
+
+# Update card
+curl -X PUT http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+# Expected: 204 No Content
+
+# Cancel card
+curl -X DELETE http://localhost:8000/api/customer/1234567890/card
+# Expected: 204 No Content
+```
+
+**Loan management (via gateway):**
+```bash
+# Apply for a loan
+curl -X POST http://localhost:8000/api/customer/1234567890/loan \
+  -H "Content-Type: application/json" \
+  -d '{"loanType": "Home Loan", "totalLoan": 500000}'
+# Expected: {"statusCode":"201","statusMessage":"Loan created successfully"}
+
+# Get loan details
+curl http://localhost:8000/api/customer/1234567890/loan
+# Expected: JSON with loan details
+
+# Update loan
+curl -X PUT http://localhost:8000/api/customer/1234567890/loan \
+  -H "Content-Type: application/json" \
+  -d '{"loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+# Expected: 204 No Content
+
+# Close loan
+curl -X DELETE http://localhost:8000/api/customer/1234567890/loan
+# Expected: 204 No Content
+```
+
+### Direct Downstream APIs
+
+The downstream services are also accessible directly for debugging:
+
+**Account Service (port 8080):**
+```bash
 curl -X POST http://localhost:8080/account/api/create \
   -H "Content-Type: application/json" \
   -d '{"name": "John Doe", "email": "john@example.com", "mobileNumber": "1234567890"}'
-# Expected: {"statusCode":"201","statusMessage":"Account created successfully"}
 
-# Fetch account by mobile number
 curl http://localhost:8080/account/api/fetch?mobileNumber=1234567890
-# Expected: JSON with customer details including name, email, mobileNumber, and accountDto
 
-# Update account
 curl -X PUT http://localhost:8080/account/api/update \
   -H "Content-Type: application/json" \
   -d '{"name": "John Updated", "email": "john@example.com", "mobileNumber": "1234567890", "accountDto": {"accountNumber": <ACCOUNT_NUMBER>, "accountType": "Savings", "branchAddress": "123 New Street"}}'
-# Expected: 204 No Content
 
-# Delete account
 curl -X DELETE "http://localhost:8080/account/api/delete?mobileNumber=1234567890"
-# Expected: 204 No Content
 ```
 
-### Card Service API
-
+**Card Service (port 9000):**
 ```bash
-# Create a card
 curl -X POST http://localhost:9000/card/api \
   -H "Content-Type: application/json" \
   -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 100000}'
-# Expected: {"statusCode":"201","statusMessage":"Card created successfully"}
 
-# Fetch card by mobile number
 curl http://localhost:9000/card/api?mobileNumber=1234567890
-# Expected: JSON with card details including cardNumber, cardType, totalLimit, amountUsed, availableAmount
 
-# Update card
 curl -X PUT http://localhost:9000/card/api \
   -H "Content-Type: application/json" \
   -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
-# Expected: 204 No Content
 
-# Delete card
 curl -X DELETE "http://localhost:9000/card/api?mobileNumber=1234567890"
-# Expected: 204 No Content
 ```
 
-### Loan Service API
-
+**Loan Service (port 8090):**
 ```bash
-# Create a loan
 curl -X POST http://localhost:8090/loan/api \
   -H "Content-Type: application/json" \
   -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000}'
-# Expected: {"statusCode":"201","statusMessage":"Loan created successfully"}
 
-# Fetch loan by mobile number
 curl http://localhost:8090/loan/api?mobileNumber=1234567890
-# Expected: JSON with loan details including loanNumber, loanType, totalLoan, amountPaid, outstandingAmount
 
-# Update loan
 curl -X PUT http://localhost:8090/loan/api \
   -H "Content-Type: application/json" \
   -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
-# Expected: 204 No Content
 
-# Delete loan
 curl -X DELETE "http://localhost:8090/loan/api?mobileNumber=1234567890"
-# Expected: 204 No Content
 ```
 
 ### Swagger UI
 
 API documentation is available at:
+- Gateway: http://localhost:8000/swagger-ui.html
 - Account: http://localhost:8080/account/swagger-ui.html
 - Card: http://localhost:9000/card/swagger-ui.html
 - Loan: http://localhost:8090/loan/swagger-ui.html

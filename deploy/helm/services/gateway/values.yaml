@@ -1,0 +1,74 @@
+service:
+  name: gateway
+  port: 8000
+
+image:
+  repository: ghcr.io/sharanggupta/eazybank/gateway
+  tag: latest
+
+app:
+  spring:
+    profiles: default
+  env:
+    SERVICES_ACCOUNT_URL: "http://account:8080"
+    SERVICES_CARD_URL: "http://card:9000"
+    SERVICES_LOAN_URL: "http://loan:8090"
+
+postgresql:
+  enabled: false
+
+k8s:
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "224Mi"
+      cpu: "100m"
+    limits:
+      memory: "448Mi"
+      cpu: "350m"
+
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPU: 95
+    targetMemory: 95
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    host: ""
+    path: /
+    tls: []
+
+  service:
+    type: LoadBalancer
+    nodePort: null
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      enabled: true
+      initialDelaySeconds: 90
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3

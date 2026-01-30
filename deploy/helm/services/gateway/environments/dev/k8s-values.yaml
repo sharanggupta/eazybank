@@ -1,0 +1,17 @@
+k8s:
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "224Mi"
+      cpu: "100m"
+    limits:
+      memory: "448Mi"
+      cpu: "350m"
+
+  ingress:
+    enabled: false
+    host: ""
+
+  service:
+    type: ClusterIP

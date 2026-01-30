@@ -1,0 +1,10 @@
+service:
+  name: gateway
+
+app:
+  spring:
+    profiles: dev
+  env:
+    SERVICES_ACCOUNT_URL: "http://account:8080"
+    SERVICES_CARD_URL: "http://card:9000"
+    SERVICES_LOAN_URL: "http://loan:8090"

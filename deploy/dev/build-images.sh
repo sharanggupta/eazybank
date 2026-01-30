@@ -34,6 +34,7 @@ echo "Building Docker images for EazyBank microservices..."
 build_service "account" "Account"
 build_service "card" "Card"
 build_service "loan" "Loan"
+build_service "gateway" "Gateway"
 
 echo ""
 echo "✓ All images built successfully:"
