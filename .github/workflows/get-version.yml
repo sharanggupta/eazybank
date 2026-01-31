@@ -121,8 +121,10 @@ jobs:
 
           # Get commits since last tag that touch this service
           if [ -z "$LATEST_TAG" ]; then
-            COMMITS=$(git log --oneline -- "$SERVICE/" "deploy/helm/services/$SERVICE/" 2>/dev/null || git log --oneline -- "$SERVICE/")
+            # No tags yet: only check current commit (HEAD) to avoid looking at old history
+            COMMITS=$(git log -1 --oneline HEAD -- "$SERVICE/" "deploy/helm/services/$SERVICE/" 2>/dev/null || git log -1 --oneline HEAD -- "$SERVICE/")
           else
+            # Has tags: check commits since last tag
             COMMITS=$(git log "${LATEST_TAG}..HEAD" --oneline -- "$SERVICE/" "deploy/helm/services/$SERVICE/" 2>/dev/null || git log "${LATEST_TAG}..HEAD" --oneline -- "$SERVICE/")
           fi
 
