@@ -1,6 +1,5 @@
 package dev.sharanggupta.gateway.service.impl;
 
-import dev.sharanggupta.gateway.client.AccountServiceClient;
 import dev.sharanggupta.gateway.dto.AccountInfoDto;
 import dev.sharanggupta.gateway.dto.CardInfoDto;
 import dev.sharanggupta.gateway.dto.CustomerDetailsDto;
@@ -9,6 +8,7 @@ import dev.sharanggupta.gateway.dto.OnboardCustomerRequest;
 import dev.sharanggupta.gateway.dto.UpdateProfileRequest;
 import dev.sharanggupta.gateway.exception.DownstreamServiceException;
 import dev.sharanggupta.gateway.exception.ResourceNotFoundException;
+import dev.sharanggupta.gateway.service.AccountService;
 import dev.sharanggupta.gateway.service.CardService;
 import dev.sharanggupta.gateway.service.CustomerService;
 import dev.sharanggupta.gateway.service.LoanService;
@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class CustomerServiceImpl implements CustomerService {
 
-    private final AccountServiceClient accountClient;
+    private final AccountService accountService;
     private final CardService cardService;
     private final LoanService loanService;
 
@@ -32,7 +32,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerDetailsDto getCustomerDetails(String mobileNumber) {
         log.info("Fetching customer details for mobile number: {}", mobileNumber);
 
-        AccountInfoDto account = accountClient.fetchAccountByMobileNumber(mobileNumber)
+        AccountInfoDto account = accountService.getAccount(mobileNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber));
 
         var cardAndLoan = fetchCardAndLoanInParallel(mobileNumber);
@@ -48,18 +48,18 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public void onboardCustomer(OnboardCustomerRequest request) {
         log.info("Onboarding customer with mobile number: {}", request.mobileNumber());
-        accountClient.createAccount(request.name(), request.email(), request.mobileNumber());
+        accountService.createAccount(request.name(), request.email(), request.mobileNumber());
     }
 
     @Override
     public void updateProfile(String mobileNumber, UpdateProfileRequest request) {
         log.info("Updating profile for mobile number: {}", mobileNumber);
 
-        AccountInfoDto existingAccount = accountClient.fetchAccountByMobileNumber(mobileNumber)
+        AccountInfoDto existingAccount = accountService.getAccount(mobileNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber));
 
         AccountInfoDto updatedAccount = applyProfileUpdate(existingAccount, request);
-        accountClient.updateAccount(mobileNumber, updatedAccount);
+        accountService.updateAccount(mobileNumber, updatedAccount);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("Offboarding customer with mobile number: {}", mobileNumber);
         tryCancelCard(mobileNumber);
         tryCloseLoan(mobileNumber);
-        accountClient.deleteAccount(mobileNumber);
+        accountService.deleteAccount(mobileNumber);
     }
 
     private CardAndLoan fetchCardAndLoanInParallel(String mobileNumber) {
