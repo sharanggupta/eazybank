@@ -13,7 +13,7 @@ Do not commit to production - delete after testing.
 ---
 
 ## Scenario 1: Feature Commit (MINOR Bump)
-- File edited: account/src/test.txt (triggers deploy-account.yml)
+- File edited: account/.versiontest.txt (triggers deploy-account.yml)
 - Commit message: feat: test MINOR version bump
 - Expected: Version bumps MINOR, builds, deploys to staging
-- Time: Test in progress...
+- Status: About to commit (workflow files were just fixed)
