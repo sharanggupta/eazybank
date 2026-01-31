@@ -5,6 +5,7 @@ A microservices-based banking application demonstrating independent, scalable mi
 ## CI/CD Status
 
 **Full-Stack Deployment:**
+
 [![Build and Deploy](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml)
 
 **Individual Service Deployments:**
