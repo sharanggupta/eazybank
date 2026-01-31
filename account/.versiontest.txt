@@ -1,0 +1,1 @@
+# Test scenario 1: MINOR bump
