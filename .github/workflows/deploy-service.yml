@@ -41,8 +41,8 @@ on:
         required: true
         type: string
     secrets:
-      github_token:
-        description: 'GitHub token for registry login'
+      registry_token:
+        description: 'Container registry token for login'
         required: true
       kube_config:
         description: 'Kubeconfig for staging cluster'
@@ -109,7 +109,7 @@ jobs:
         with:
           registry: ${{ inputs.registry }}
           username: ${{ github.actor }}
-          password: ${{ secrets.github_token }}
+          password: ${{ secrets.registry_token }}
 
       - name: Update version in pom.xml and values.yaml
         run: |

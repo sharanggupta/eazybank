@@ -41,7 +41,7 @@ jobs:
       registry: ghcr.io
       image_prefix: ${{ github.repository_owner }}/eazybank
     secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      registry_token: ${{ secrets.GITHUB_TOKEN }}
       kube_config: ${{ secrets.KUBE_CONFIG }}
       kube_config_prod: ${{ secrets.KUBE_CONFIG_PROD }}
       db_password: ${{ secrets.DB_PASSWORD }}
