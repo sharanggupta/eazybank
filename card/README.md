@@ -304,3 +304,4 @@ Customer profile is still returned with account and loan data intact.
 See [../docs/configuration-reference.md](../docs/configuration-reference.md) for full configuration options.
 See [../deploy/dev/resilience-testing.md](../deploy/dev/resilience-testing.md) to test graceful degradation.
 Updated card documentation
+Updated card service documentation - test run
