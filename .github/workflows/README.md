@@ -61,7 +61,17 @@ Each service workflow:
 Reusable workflow called by all individual service workflows. Contains the actual build/deploy logic.
 - Not meant to be triggered directly
 - Called via `uses: ./.github/workflows/deploy-service.yml` from other workflows
-- Handles versioning, building, and deployment for any service
+- Handles smart semantic versioning, building, and deployment for any service
+
+**Smart Versioning** (via `get-version.yml`):
+- Automatically calculates version bumps based on commit messages
+- `feat:` commits → MINOR version bump
+- `fix:/refactor:/perf:` commits → PATCH version bump
+- `BREAKING CHANGE:` → MAJOR version bump
+- `docs:/test:/chore:/ci:` → Skip build (no version bump)
+- Creates git tags after successful production deployment
+
+📖 See [VERSIONING.md](../VERSIONING.md) for complete versioning guide.
 
 ---
 
@@ -197,13 +207,13 @@ See [README.md](../../README.md) for complete setup guide.
 
 ### 3. Version Services Independently
 
-Each service maintains its own version in `pom.xml` and `app-values.yaml`. Use service-specific tags:
-```
-ghcr.io/sharanggupta/eazybank/account:v1.2.3
-ghcr.io/sharanggupta/eazybank/card:v2.1.0
-```
+Each service automatically gets its own version based on commit messages:
+- Versions are calculated by `get-version.yml` workflow
+- Git tags track versions: `v-account-1.2.3`, `v-card-2.1.0`
+- Docker images tagged with calculated version
+- See [VERSIONING.md](../VERSIONING.md) for how versions are calculated
 
-Services can be on different versions simultaneously.
+Services naturally maintain different versions simultaneously based on their commit history.
 
 ### 4. Test Before Merging
 

@@ -15,6 +15,10 @@
 
 name: Deploy Card Service
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
