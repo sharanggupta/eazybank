@@ -1,2 +1,0 @@
-# Test: PATCH version bump scenario
-# Retest with password fix
