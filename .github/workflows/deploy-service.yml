@@ -95,8 +95,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch service-specific tags from remote
-        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
+      - name: Fetch all tags from remote
+        run: git fetch --tags
 
       - name: Display version info
         run: |
@@ -162,8 +162,22 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ needs.calculate-version.outputs.git_tag }}
-          git push https://x-access-token:${GIT_RELEASE_TOKEN}@github.com/${{ github.repository }}.git ${{ needs.calculate-version.outputs.git_tag }}
+
+          TAG="${{ needs.calculate-version.outputs.git_tag }}"
+
+          # Check if tag already exists locally
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "⚠️  Tag $TAG already exists locally, skipping tag creation"
+          else
+            echo "Creating tag $TAG"
+            git tag "$TAG"
+          fi
+
+          # Push tag to remote
+          # If tag already exists on remote, that's expected (e.g., retried workflow)
+          git push https://x-access-token:${GIT_RELEASE_TOKEN}@github.com/${{ github.repository }}.git "$TAG" || true
+
+          echo "✓ Tag $TAG is now available in the repository"
         env:
           GIT_RELEASE_TOKEN: ${{ secrets.git_release_token }}
 
@@ -197,8 +211,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch service-specific tags from remote
-        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
+      - name: Fetch all tags from remote
+        run: git fetch --tags
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -285,8 +299,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch service-specific tags from remote
-        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
+      - name: Fetch all tags from remote
+        run: git fetch --tags
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
