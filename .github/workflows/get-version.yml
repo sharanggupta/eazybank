@@ -10,7 +10,7 @@
 # Input: service name (account, card, loan, gateway)
 # Output:
 #   - new_version: e.g., "0.1.2"
-#   - git_tag: e.g., "v-account-0.1.2"
+#   - git_tag: e.g., "account-v0.1.2"
 #   - should_build: true/false (skip if only docs changed)
 #
 # =============================================================================
@@ -29,7 +29,7 @@ on:
         description: 'New semantic version (e.g., 0.1.2)'
         value: ${{ jobs.calculate.outputs.new_version }}
       git_tag:
-        description: 'Git tag name (e.g., v-account-0.1.2)'
+        description: 'Git tag name (e.g., account-v0.1.2)'
         value: ${{ jobs.calculate.outputs.git_tag }}
       should_build:
         description: 'Whether to build this service (true/false)'
@@ -94,7 +94,7 @@ jobs:
           echo "📝 Getting current version from git tags..."
 
           # Find latest tag for this service
-          LATEST_TAG=$(git describe --tags --match "v-${SERVICE}-*" --abbrev=0 2>/dev/null || echo "")
+          LATEST_TAG=$(git describe --tags --match "${SERVICE}-v*" --abbrev=0 2>/dev/null || echo "")
 
           if [ -z "$LATEST_TAG" ]; then
             echo "  ℹ️  No previous tags found, starting at 0.0.0"
@@ -104,8 +104,8 @@ jobs:
             CURRENT_PATCH=0
           else
             echo "  ✓ Latest tag: $LATEST_TAG"
-            # Extract version from tag (v-service-X.Y.Z)
-            VERSION_STRING=$(echo "$LATEST_TAG" | sed "s/v-${SERVICE}-//")
+            # Extract version from tag (service-vX.Y.Z)
+            VERSION_STRING=$(echo "$LATEST_TAG" | sed "s/${SERVICE}-v//")
             CURRENT_MAJOR=$(echo "$VERSION_STRING" | cut -d. -f1)
             CURRENT_MINOR=$(echo "$VERSION_STRING" | cut -d. -f2)
             CURRENT_PATCH=$(echo "$VERSION_STRING" | cut -d. -f3)
