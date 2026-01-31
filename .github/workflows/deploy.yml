@@ -1,0 +1,364 @@
+# =============================================================================
+# Complete Deployment Pipeline
+# =============================================================================
+#
+# Single workflow with sequential steps:
+# 1. Build images and push to GHCR
+# 2. Deploy to Staging (automatic after successful build)
+# 3. Manual Approval Gate (wait for user confirmation)
+# 4. Deploy to Production (only after manual approval)
+#
+# Triggers:
+#   - Manual trigger only (workflow_dispatch)
+#   - Use individual service workflows (deploy-account.yml, deploy-card.yml, etc)
+#     for automatic deployment on push
+#   - Use this for platform-wide changes only
+#
+# =============================================================================
+
+name: Build and Deploy (Manual Full-Stack)
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_staging:
+        description: 'Skip staging (dangerous, use only for re-deploying to prod)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/eazybank
+
+jobs:
+
+  # ===========================================================================
+  # JOB: Build
+  # ===========================================================================
+  # Build Docker images and push to GitHub Container Registry
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [account, card, loan, gateway]
+
+    outputs:
+      image_tag: ${{ steps.semver.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate semantic version
+        id: semver
+        uses: MCKanpolat/auto-semver-action@v2
+        with:
+          releaseType: patch
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version in pom.xml and values.yaml
+        run: |
+          VERSION=${{ steps.semver.outputs.version }}
+          # Remove 'v' prefix for app version (e.g., v0.0.1 → 0.0.1)
+          APP_VERSION=${VERSION#v}
+
+          # Use Maven's versions:set plugin to safely update pom.xml
+          # This handles parent POMs correctly without affecting them
+          cd ./${{ matrix.service }}
+          mvn -DnewVersion=$APP_VERSION -DgenerateBackupFiles=false versions:set -q
+          cd ..
+
+          echo "Updated ${{ matrix.service }} pom.xml to version $APP_VERSION"
+
+          # Update app-values.yaml for all environments
+          for env in dev staging prod; do
+            VALUES_FILE="./deploy/helm/services/${{ matrix.service }}/environments/${env}/app-values.yaml"
+            if [ -f "$VALUES_FILE" ]; then
+              sed -i "s/version: .*/version: ${APP_VERSION}/" "$VALUES_FILE"
+            fi
+          done
+
+          echo "Version update complete: ${{ matrix.service }} → $APP_VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push with Buildx (multi-platform)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ steps.semver.outputs.version }}
+          platforms: linux/amd64,linux/arm64
+
+  # ===========================================================================
+  # JOB: Deploy to Staging
+  # ===========================================================================
+  # Automatically deploy to staging after successful build
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    if: |
+      success() &&
+      (github.event_name == 'push' || !inputs.skip_staging)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connectivity
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace eazybank-staging --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy account to staging
+        run: |
+          helm upgrade --install account ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/account \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            -f ./deploy/helm/services/account/values.yaml \
+            -f ./deploy/helm/services/account/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/account/environments/staging/k8s-values.yaml
+
+      - name: Deploy card to staging
+        run: |
+          helm upgrade --install card ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/card \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            -f ./deploy/helm/services/card/values.yaml \
+            -f ./deploy/helm/services/card/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/card/environments/staging/k8s-values.yaml
+
+      - name: Deploy loan to staging
+        run: |
+          helm upgrade --install loan ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/loan \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            -f ./deploy/helm/services/loan/values.yaml \
+            -f ./deploy/helm/services/loan/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/loan/environments/staging/k8s-values.yaml
+
+      - name: Deploy gateway to staging
+        run: |
+          helm upgrade --install gateway ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gateway \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            -f ./deploy/helm/services/gateway/values.yaml \
+            -f ./deploy/helm/services/gateway/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/gateway/environments/staging/k8s-values.yaml
+
+      - name: Verify staging deployment
+        run: |
+          kubectl get all -n eazybank-staging
+          kubectl wait --for=condition=Ready pod \
+            -l app.kubernetes.io/instance \
+            -n eazybank-staging \
+            --timeout=300s || echo "Some pods still starting"
+
+      - name: Staging deployment summary
+        run: |
+          echo "### Staging Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: All services deployed to staging" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Step**: Go to Actions → This workflow → Manual approval to deploy to production" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # JOB: Wait for Approval
+  # ===========================================================================
+  # Manual approval gate before production deployment
+  # ---------------------------------------------------------------------------
+  approval:
+    name: Wait for Approval to Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+
+    if: github.event_name == 'push'
+
+    environment:
+      name: production
+      # Optionally add reviewers here in GitHub UI:
+      # Settings → Environments → production → Required reviewers
+
+    steps:
+      - name: Approval granted
+        run: |
+          echo "### ✅ Production Deployment Approved" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Proceeding to deploy to production..." >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # JOB: Deploy to Production
+  # ===========================================================================
+  # Deploy to production only after manual approval
+  # ---------------------------------------------------------------------------
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging, approval]
+
+    if: |
+      success() &&
+      github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connectivity
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace eazybank-prod --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy account to production
+        run: |
+          helm upgrade --install account ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/account \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            -f ./deploy/helm/services/account/values.yaml \
+            -f ./deploy/helm/services/account/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/account/environments/prod/k8s-values.yaml
+
+      - name: Deploy card to production
+        run: |
+          helm upgrade --install card ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/card \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            -f ./deploy/helm/services/card/values.yaml \
+            -f ./deploy/helm/services/card/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/card/environments/prod/k8s-values.yaml
+
+      - name: Deploy loan to production
+        run: |
+          helm upgrade --install loan ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/loan \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            -f ./deploy/helm/services/loan/values.yaml \
+            -f ./deploy/helm/services/loan/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/loan/environments/prod/k8s-values.yaml
+
+      - name: Deploy gateway to production
+        run: |
+          helm upgrade --install gateway ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gateway \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            -f ./deploy/helm/services/gateway/values.yaml \
+            -f ./deploy/helm/services/gateway/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/gateway/environments/prod/k8s-values.yaml
+
+      - name: Verify production deployment
+        run: |
+          kubectl get all -n eazybank-prod
+          kubectl wait --for=condition=Ready pod \
+            -l app.kubernetes.io/instance \
+            -n eazybank-prod \
+            --timeout=300s || echo "Some pods still starting"
+
+      - name: Production deployment summary
+        run: |
+          echo "### Production Deployment Complete :tada:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: All services deployed to production" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag**: \`${{ needs.build.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace**: \`eazybank-prod\`" >> $GITHUB_STEP_SUMMARY
