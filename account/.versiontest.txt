@@ -1,2 +1,3 @@
 # Test scenario 1: MINOR bump
 # Scenario 1: Testing MINOR version bump
+# Test: MINOR version bump scenario
