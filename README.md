@@ -386,10 +386,32 @@ kubectl logs -f deployment/account -n eazybank-staging
 helm rollback gateway 1 -n eazybank-staging
 ```
 
-## Additional Documentation
+## Documentation
 
-- [deploy/dev/README.md](deploy/dev/README.md) — Local Docker Compose development
-- [deploy/helm/README.md](deploy/helm/README.md) — Advanced Kubernetes configuration
+### Getting Started
+
+- [deploy/dev/README.md](deploy/dev/README.md) — Local Docker Compose setup & verification
+- [deploy/helm/README.md](deploy/helm/README.md) — Kubernetes & Helm deployment
+- [DEPLOYMENT.md](DEPLOYMENT.md) — Production operations and troubleshooting
+
+### Configuration & Reference
+
+- [docs/configuration-reference.md](docs/configuration-reference.md) — All environment variables and configuration options
+- [.github/workflows/README.md](.github/workflows/README.md) — CI/CD pipeline documentation
+
+### API & Examples
+
+- [deploy/dev/api-examples.md](deploy/dev/api-examples.md) — Complete API examples for all endpoints (gateway + downstream services)
+- [deploy/dev/resilience-testing.md](deploy/dev/resilience-testing.md) — Circuit breaker testing & graceful degradation scenarios
+
+### Service Documentation
+
+**Each microservice has its own README with API endpoints, models, and configuration:**
+
+- [account/README.md](account/README.md) — Account service (customer account management)
+- [card/README.md](card/README.md) — Card service (credit card management)
+- [loan/README.md](loan/README.md) — Loan service (loan management)
+- [gateway/README.md](gateway/README.md) — API Gateway (write gate pattern & circuit breaker architecture)
 
 ## License
 
