@@ -85,8 +85,13 @@ jobs:
           # Remove 'v' prefix for app version (e.g., v0.0.1 → 0.0.1)
           APP_VERSION=${VERSION#v}
 
-          # Update pom.xml - only replace the project version (0.0.1-SNAPSHOT)
-          sed -i "s/<version>0\.0\.1-SNAPSHOT<\/version>/<version>${APP_VERSION}<\/version>/" ./${{ matrix.service }}/pom.xml
+          # Use Maven's versions:set plugin to safely update pom.xml
+          # This handles parent POMs correctly without affecting them
+          cd ./${{ matrix.service }}
+          mvn -DnewVersion=$APP_VERSION -DgenerateBackupFiles=false versions:set -q
+          cd ..
+
+          echo "Updated ${{ matrix.service }} pom.xml to version $APP_VERSION"
 
           # Update app-values.yaml for all environments
           for env in dev staging prod; do
@@ -96,7 +101,7 @@ jobs:
             fi
           done
 
-          echo "Updated versions to: ${APP_VERSION}"
+          echo "Version update complete: ${{ matrix.service }} → $APP_VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
