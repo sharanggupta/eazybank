@@ -209,7 +209,8 @@ jobs:
             --wait --timeout 5m \
             --set image.repository=${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }} \
             --set image.tag=${{ needs.build.outputs.image_tag }} \
-            $( [ "${{ inputs.service }}" != "gateway" ] && echo "--set app.datasource.password=\"${{ secrets.db_password }}\" --set postgresql.credentials.password=\"${{ secrets.db_password }}\"" || echo "" ) \
+            --set app.datasource.password="${{ secrets.db_password }}" \
+            --set postgresql.credentials.password="${{ secrets.db_password }}" \
             -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/k8s-values.yaml
@@ -293,7 +294,8 @@ jobs:
             --wait --timeout 5m \
             --set image.repository=${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }} \
             --set image.tag=${{ needs.build.outputs.image_tag }} \
-            $( [ "${{ inputs.service }}" != "gateway" ] && echo "--set app.datasource.password=\"${{ secrets.db_password_prod }}\" --set postgresql.credentials.password=\"${{ secrets.db_password_prod }}\"" || echo "" ) \
+            --set app.datasource.password="${{ secrets.db_password_prod }}" \
+            --set postgresql.credentials.password="${{ secrets.db_password_prod }}" \
             -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/k8s-values.yaml
