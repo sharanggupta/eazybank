@@ -2,7 +2,15 @@
 
 A microservices-based banking application demonstrating independent, scalable microservices architecture with Spring Boot and Kubernetes.
 
+## CI/CD Status
+
+**Full-Stack Deployment:**
 [![Build and Deploy](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy.yml)
+
+**Individual Service Deployments:**
+| Account | Card | Loan | Gateway |
+|---------|------|------|---------|
+| [![Deploy Account Service](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-account.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-account.yml) | [![Deploy Card Service](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-card.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-card.yml) | [![Deploy Loan Service](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-loan.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-loan.yml) | [![Deploy Gateway](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-gateway.yml/badge.svg)](https://github.com/sharanggupta/eazybank/actions/workflows/deploy-gateway.yml) |
 
 ## Overview
 
