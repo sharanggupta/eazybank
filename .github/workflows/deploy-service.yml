@@ -16,10 +16,10 @@
 #   1. Calculate version (based on commits since last tag)
 #   2. Skip if no code changes (docs/config only)
 #   3. Build and push Docker image with version tag
-#   4. Deploy to staging (automatic)
-#   5. Manual approval gate (required before prod)
-#   6. Deploy to production (only after approval)
-#   7. Create git tag for version (source of truth)
+#   4. Create git tag for version (marks artifact as released)
+#   5. Deploy to staging (automatic)
+#   6. Manual approval gate (required before prod)
+#   7. Deploy to production (only after approval)
 #
 # =============================================================================
 
@@ -72,8 +72,11 @@ jobs:
       service: ${{ inputs.service }}
 
   # ===========================================================================
-  # Build and Push Docker Image
+  # Build, Push Docker Image, and Create Release Tag
   # ===========================================================================
+  # Creates git tag as the artifact is published (not after deployment)
+  # This ensures version numbers represent "released artifacts" not
+  # "what made it to production", allowing safe retry of prod deployments
   build:
     name: Build and Push ${{ inputs.service }}
     runs-on: ubuntu-latest
@@ -151,6 +154,15 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create git tag for release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ needs.calculate-version.outputs.git_tag }}
+          git push https://x-access-token:${GIT_RELEASE_TOKEN}@github.com/${{ github.repository }}.git ${{ needs.calculate-version.outputs.git_tag }}
+        env:
+          GIT_RELEASE_TOKEN: ${{ secrets.git_release_token }}
 
   # ===========================================================================
   # Skip Notification (if no code changes detected)
@@ -312,15 +324,6 @@ jobs:
             -l app.kubernetes.io/instance=${{ inputs.service }} \
             -n eazybank-prod \
             --timeout=300s || echo "Pod still starting"
-
-      - name: Create git tag for release
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ needs.calculate-version.outputs.git_tag }}
-          git push https://x-access-token:${GIT_RELEASE_TOKEN}@github.com/${{ github.repository }}.git ${{ needs.calculate-version.outputs.git_tag }}
-        env:
-          GIT_RELEASE_TOKEN: ${{ secrets.git_release_token }}
 
       - name: Production deployment summary
         run: |
