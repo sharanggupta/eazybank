@@ -116,7 +116,8 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
 
           # Update pom.xml - only replace project version (0.0.1*), not parent version
-          sed -i 's/<version>0\.0\.1[^<]*<\/version>/<version>'"${VERSION}"'<\/version>/' ./${{ inputs.service }}/pom.xml
+          # Use | as delimiter to avoid escaping issues with / in variable expansion
+          sed -i 's|<version>0\.0\.1[^<]*</version>|<version>'"${VERSION}"'</version>|' ./${{ inputs.service }}/pom.xml
 
           # Update app-values.yaml for all environments
           for env in dev staging prod; do
