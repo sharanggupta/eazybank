@@ -9,22 +9,16 @@
 # 4. Deploy to Production (only after manual approval)
 #
 # Triggers:
-#   - Push to main: Automatic build → automatic staging deploy
-#   - Manual approval required before production deploy
+#   - Manual trigger only (workflow_dispatch)
+#   - Use individual service workflows (deploy-account.yml, deploy-card.yml, etc)
+#     for automatic deployment on push
+#   - Use this for platform-wide changes only
 #
 # =============================================================================
 
-name: Build and Deploy
+name: Build and Deploy (Manual Full-Stack)
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
-      - '.gitignore'
-      - 'LICENSE'
   workflow_dispatch:
     inputs:
       skip_staging:
