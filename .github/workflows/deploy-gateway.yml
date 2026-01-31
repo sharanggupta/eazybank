@@ -26,9 +26,7 @@ on:
       - 'deploy/helm/services/gateway/**'
       - '.github/workflows/deploy-gateway.yml'
       - '.github/workflows/deploy-service.yml'
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
+      - '.github/workflows/get-version.yml'
   workflow_dispatch:
 
 env:

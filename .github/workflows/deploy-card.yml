@@ -24,9 +24,7 @@ on:
       - 'deploy/helm/services/card/**'
       - '.github/workflows/deploy-card.yml'
       - '.github/workflows/deploy-service.yml'
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
+      - '.github/workflows/get-version.yml'
   workflow_dispatch:
 
 env:
