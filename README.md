@@ -425,3 +425,5 @@ helm rollback gateway 1 -n eazybank-staging
 ## License
 
 Licensed under Apache License 2.0 — see [LICENSE](LICENSE)
+
+<!-- Testing Scenario 3: docs-only commit should skip build -->
