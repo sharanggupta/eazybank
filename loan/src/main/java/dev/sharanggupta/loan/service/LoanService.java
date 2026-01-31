@@ -3,6 +3,7 @@ package dev.sharanggupta.loan.service;
 import dev.sharanggupta.loan.dto.LoanDto;
 
 public interface LoanService {
+    // Workflow test scenario 1: PATCH version bump
 
     void createLoan(LoanDto loanDto);
 
