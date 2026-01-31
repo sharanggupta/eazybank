@@ -80,6 +80,11 @@ jobs:
             echo "ℹ️  No code changes for $SERVICE (docs/config only)"
             echo "should_build=false" >> $GITHUB_OUTPUT
             echo "version_bump_type=NONE" >> $GITHUB_OUTPUT
+            echo "new_version=" >> $GITHUB_OUTPUT
+            echo "git_tag=" >> $GITHUB_OUTPUT
+
+            echo "### ⏭️ Build Skipped for $SERVICE" >> $GITHUB_STEP_SUMMARY
+            echo "No code changes detected (docs/config only changes)" >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
 
@@ -132,15 +137,15 @@ jobs:
             # Step 4: Determine version bump based on commit messages
             # =================================================================
             # Check for BREAKING CHANGE (highest priority)
-            if echo "$COMMITS" | grep -iE "BREAKING CHANGE|^[a-z]+!:" > /dev/null; then
+            if echo "$COMMITS" | grep -iE "BREAKING CHANGE|[a-z]+!:" > /dev/null; then
               echo "  🔴 Found BREAKING CHANGE → MAJOR bump"
               BUMP_TYPE="MAJOR"
             # Check for feat: (MINOR)
-            elif echo "$COMMITS" | grep "^feat:" > /dev/null; then
+            elif echo "$COMMITS" | grep "feat:" > /dev/null; then
               echo "  🟡 Found feat → MINOR bump"
               BUMP_TYPE="MINOR"
             # Check for fix/refactor/perf (PATCH)
-            elif echo "$COMMITS" | grep -E "^(fix|refactor|perf):" > /dev/null; then
+            elif echo "$COMMITS" | grep -E "(fix|refactor|perf):" > /dev/null; then
               echo "  🟢 Found fix/refactor/perf → PATCH bump"
               BUMP_TYPE="PATCH"
             # Default to PATCH if no recognized prefix
@@ -202,3 +207,12 @@ jobs:
           echo "git_tag=$GIT_TAG" >> $GITHUB_OUTPUT
           echo "should_build=true" >> $GITHUB_OUTPUT
           echo "version_bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+          # Add nice summary to GitHub Actions UI
+          echo "### 📊 Version Calculation for $SERVICE" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Current Version** | \`$CURRENT_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bump Type** | \`$BUMP_TYPE\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **New Version** | \`$NEW_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git Tag** | \`$GIT_TAG\` |" >> $GITHUB_STEP_SUMMARY
