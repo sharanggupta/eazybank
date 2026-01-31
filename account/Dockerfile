@@ -1,11 +1,11 @@
 # Build stage
-FROM eclipse-temurin:25-jdk AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /build
 COPY . .
 RUN ./mvnw -DskipTests clean package -q
 
 # Runtime stage
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
 EXPOSE 8080
