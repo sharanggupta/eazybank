@@ -71,9 +71,9 @@ jobs:
           SERVICE_CHANGED=false
           if [ -z "$CHANGED_FILES" ]; then
             # First commit or no previous commit, check staged files
-            SERVICE_CHANGED=$(git diff --name-only --cached | grep -E "^$SERVICE/" > /dev/null && echo "true" || echo "false")
+            SERVICE_CHANGED=$(git diff --name-only --cached | grep -v -E "\.md$" | grep -E "^$SERVICE/" > /dev/null && echo "true" || echo "false")
           else
-            SERVICE_CHANGED=$(echo "$CHANGED_FILES" | grep -E "^($SERVICE/|deploy/helm/services/$SERVICE/)" > /dev/null && echo "true" || echo "false")
+            SERVICE_CHANGED=$(echo "$CHANGED_FILES" | grep -v -E "\.md$" | grep -E "^($SERVICE/|deploy/helm/services/$SERVICE/)" > /dev/null && echo "true" || echo "false")
           fi
 
           if [ "$SERVICE_CHANGED" != "true" ]; then
