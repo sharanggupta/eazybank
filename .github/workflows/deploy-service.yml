@@ -1,0 +1,317 @@
+# =============================================================================
+# Reusable Service Deployment Workflow
+# =============================================================================
+#
+# This is a reusable workflow that builds and deploys a single microservice
+# Called by: deploy-account.yml, deploy-card.yml, deploy-loan.yml, deploy-gateway.yml
+#
+# Smart Versioning:
+#   - Calculates semantic version based on git tags + commit messages
+#   - feat: → MINOR bump (0.1.0)
+#   - fix: → PATCH bump (0.0.1)
+#   - BREAKING CHANGE: → MAJOR bump (1.0.0)
+#   - Docs-only → NO version bump, skip build
+#
+# Workflow:
+#   1. Calculate version (based on commits since last tag)
+#   2. Skip if no code changes (docs/config only)
+#   3. Build and push Docker image with version tag
+#   4. Deploy to staging (automatic)
+#   5. Manual approval gate (required before prod)
+#   6. Deploy to production (only after approval)
+#   7. Create git tag for version (source of truth)
+#
+# =============================================================================
+
+name: Deploy Service (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: 'Service name (account|card|loan|gateway)'
+        required: true
+        type: string
+      registry:
+        description: 'Container registry URL'
+        required: true
+        type: string
+      image_prefix:
+        description: 'Image prefix (e.g., owner/repo)'
+        required: true
+        type: string
+    secrets:
+      github_token:
+        description: 'GitHub token for registry login'
+        required: true
+      kube_config:
+        description: 'Kubeconfig for staging cluster'
+        required: true
+      kube_config_prod:
+        description: 'Kubeconfig for production cluster'
+        required: true
+      db_password:
+        description: 'Database password for staging'
+        required: true
+      db_password_prod:
+        description: 'Database password for production'
+        required: true
+
+jobs:
+
+  # ===========================================================================
+  # Calculate Service Version (Smart Semantic Versioning)
+  # ===========================================================================
+  calculate-version:
+    name: Calculate Version for ${{ inputs.service }}
+    uses: ./.github/workflows/get-version.yml
+    with:
+      service: ${{ inputs.service }}
+
+  # ===========================================================================
+  # Build and Push Docker Image
+  # ===========================================================================
+  build:
+    name: Build and Push ${{ inputs.service }}
+    runs-on: ubuntu-latest
+    needs: [calculate-version]
+    if: needs.calculate-version.outputs.should_build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ needs.calculate-version.outputs.new_version }}
+      git_tag: ${{ needs.calculate-version.outputs.git_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Display version info
+        run: |
+          echo "### 📊 Version Information" >> $GITHUB_STEP_SUMMARY
+          echo "**Service**: ${{ inputs.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.calculate-version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Bump Type**: ${{ needs.calculate-version.outputs.version_bump_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Git Tag**: ${{ needs.calculate-version.outputs.git_tag }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
+
+      - name: Update version in pom.xml and values.yaml
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+
+          # Update pom.xml
+          sed -i "s/<version>.*<\/version>/<version>${VERSION}<\/version>/" ./${{ inputs.service }}/pom.xml
+
+          # Update app-values.yaml for all environments
+          for env in dev staging prod; do
+            VALUES_FILE="./deploy/helm/services/${{ inputs.service }}/environments/${env}/app-values.yaml"
+            if [ -f "$VALUES_FILE" ]; then
+              sed -i "s/version: .*/version: ${VERSION}/" "$VALUES_FILE"
+            fi
+          done
+
+          echo "Updated versions to: ${VERSION}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image (multi-platform)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ inputs.service }}
+          push: true
+          tags: |
+            ${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }}:${{ needs.calculate-version.outputs.new_version }}
+            ${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }}:latest
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # Skip Notification (if no code changes detected)
+  # ===========================================================================
+  skip-notification:
+    name: Skip Build (No Code Changes)
+    runs-on: ubuntu-latest
+    needs: [calculate-version]
+    if: needs.calculate-version.outputs.should_build == 'false'
+
+    steps:
+      - name: Log skip reason
+        run: |
+          echo "### ⏭️ Build Skipped for ${{ inputs.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No code changes detected (docs/config only changes)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Bump Type**: ${{ needs.calculate-version.outputs.version_bump_type }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Deploy to Staging
+  # ===========================================================================
+  deploy-staging:
+    name: Deploy ${{ inputs.service }} to Staging
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.kube_config }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connectivity
+        run: kubectl cluster-info
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace eazybank-staging --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy ${{ inputs.service }} to staging
+        run: |
+          helm upgrade --install ${{ inputs.service }} ./deploy/helm/service-chart \
+            --namespace eazybank-staging \
+            --wait --timeout 5m \
+            --set image.repository=${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }} \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            $( [ "${{ inputs.service }}" != "gateway" ] && echo "--set app.datasource.password=\"${{ secrets.db_password }}\" --set postgresql.credentials.password=\"${{ secrets.db_password }}\"" || echo "" ) \
+            -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
+            -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/app-values.yaml \
+            -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/k8s-values.yaml
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n eazybank-staging -l app.kubernetes.io/instance=${{ inputs.service }}
+          kubectl wait --for=condition=Ready pod \
+            -l app.kubernetes.io/instance=${{ inputs.service }} \
+            -n eazybank-staging \
+            --timeout=300s || echo "Pod still starting"
+
+      - name: Staging deployment summary
+        run: |
+          echo "### ✅ ${{ inputs.service }} Deployed to Staging" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Service**: \`${{ inputs.service }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ needs.build.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace**: \`eazybank-staging\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next**: Approve production deployment via GitHub Actions UI" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Wait for Approval
+  # ===========================================================================
+  approval:
+    name: Wait for Approval
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+
+    environment:
+      name: production
+      # Add required reviewers in GitHub UI:
+      # Settings → Environments → production → Required reviewers
+
+    steps:
+      - name: Approval granted
+        run: |
+          echo "### ✅ Production Deployment Approved" >> $GITHUB_STEP_SUMMARY
+          echo "Proceeding with ${{ inputs.service }} production deployment..."  >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Deploy to Production
+  # ===========================================================================
+  deploy-prod:
+    name: Deploy ${{ inputs.service }} to Production
+    runs-on: ubuntu-latest
+    needs: [calculate-version, build, deploy-staging, approval]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.kube_config_prod }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connectivity
+        run: kubectl cluster-info
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace eazybank-prod --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy ${{ inputs.service }} to production
+        run: |
+          helm upgrade --install ${{ inputs.service }} ./deploy/helm/service-chart \
+            --namespace eazybank-prod \
+            --wait --timeout 5m \
+            --set image.repository=${{ inputs.registry }}/${{ inputs.image_prefix }}/${{ inputs.service }} \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            $( [ "${{ inputs.service }}" != "gateway" ] && echo "--set app.datasource.password=\"${{ secrets.db_password_prod }}\" --set postgresql.credentials.password=\"${{ secrets.db_password_prod }}\"" || echo "" ) \
+            -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
+            -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/app-values.yaml \
+            -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/k8s-values.yaml
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n eazybank-prod -l app.kubernetes.io/instance=${{ inputs.service }}
+          kubectl wait --for=condition=Ready pod \
+            -l app.kubernetes.io/instance=${{ inputs.service }} \
+            -n eazybank-prod \
+            --timeout=300s || echo "Pod still starting"
+
+      - name: Create git tag for release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ needs.calculate-version.outputs.git_tag }}
+          git push origin ${{ needs.calculate-version.outputs.git_tag }}
+
+      - name: Production deployment summary
+        run: |
+          echo "### 🎉 ${{ inputs.service }} Deployed to Production" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Service**: \`${{ inputs.service }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: \`${{ needs.calculate-version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Git Tag**: \`${{ needs.calculate-version.outputs.git_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace**: \`eazybank-prod\`" >> $GITHUB_STEP_SUMMARY

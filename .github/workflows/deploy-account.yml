@@ -1,0 +1,48 @@
+# =============================================================================
+# Account Service Pipeline
+# =============================================================================
+#
+# Triggers when:
+#   - Changes pushed to account/** OR
+#   - Changes pushed to deploy/helm/services/account/**
+#   - Manual trigger via workflow_dispatch
+#
+# Skips if only documentation/config changes
+#
+# Calls the reusable deploy-service.yml workflow
+#
+# =============================================================================
+
+name: Deploy Account Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'account/**'
+      - 'deploy/helm/services/account/**'
+      - '.github/workflows/deploy-account.yml'
+      - '.github/workflows/deploy-service.yml'
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/eazybank
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service: account
+      registry: ghcr.io
+      image_prefix: ${{ github.repository_owner }}/eazybank
+    secrets:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      kube_config: ${{ secrets.KUBE_CONFIG }}
+      kube_config_prod: ${{ secrets.KUBE_CONFIG_PROD }}
+      db_password: ${{ secrets.DB_PASSWORD }}
+      db_password_prod: ${{ secrets.DB_PASSWORD_PROD }}
