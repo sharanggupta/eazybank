@@ -16,7 +16,7 @@
 name: Deploy Loan Service
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 on:
@@ -48,3 +48,4 @@ jobs:
       kube_config_prod: ${{ secrets.KUBE_CONFIG_PROD }}
       db_password: ${{ secrets.DB_PASSWORD }}
       db_password_prod: ${{ secrets.DB_PASSWORD_PROD }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
