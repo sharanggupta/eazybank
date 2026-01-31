@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: gateway
+  threads:
+    virtual:
+      enabled: true
   jackson:
     default-property-inclusion: non_null
   cloud:
@@ -28,8 +31,39 @@ services:
   card-url: http://localhost:9000
   loan-url: http://localhost:8090
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      account-service:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 5
+      card-service:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 5
+      loan-service:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 5
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,gateway
+  health:
+    circuitbreakers:
+      enabled: true

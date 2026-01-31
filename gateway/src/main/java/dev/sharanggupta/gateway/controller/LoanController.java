@@ -5,6 +5,7 @@ import dev.sharanggupta.gateway.dto.ErrorResponseDto;
 import dev.sharanggupta.gateway.dto.LoanInfoDto;
 import dev.sharanggupta.gateway.dto.ResponseDto;
 import dev.sharanggupta.gateway.dto.UpdateLoanRequest;
+import dev.sharanggupta.gateway.exception.ResourceNotFoundException;
 import dev.sharanggupta.gateway.service.LoanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,7 +53,9 @@ public class LoanController {
     @GetMapping
     public ResponseEntity<LoanInfoDto> getLoan(
             @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE) String mobileNumber) {
-        return ResponseEntity.ok(loanService.getLoan(mobileNumber));
+        LoanInfoDto loan = loanService.getLoan(mobileNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan", "mobileNumber", mobileNumber));
+        return ResponseEntity.ok(loan);
     }
 
     @Operation(summary = "Update loan", description = "Updates the loan details for the customer identified by mobile number")

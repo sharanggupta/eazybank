@@ -53,15 +53,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildErrorResponse(request, HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponseDto> handleServiceUnavailable(
+            ServiceUnavailableException ex, WebRequest request) {
+        log.warn("Service unavailable: {}", ex.getMessage());
+        return buildErrorResponse(request, HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
     @ExceptionHandler(HttpClientErrorException.class)
     public ResponseEntity<ErrorResponseDto> handleHttpClientError(
             HttpClientErrorException ex, WebRequest request) {
         log.warn("Downstream HTTP error: {} {}", ex.getStatusCode(), ex.getMessage());
-        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
-        if (status == null) {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-        }
-        return buildErrorResponse(request, status, ex.getStatusText());
+        HttpStatus status = resolveHttpStatus(ex.getStatusCode().value());
+        String errorMessage = extractDownstreamErrorMessage(ex);
+        return buildErrorResponse(request, status, errorMessage);
     }
 
     @ExceptionHandler(Exception.class)
@@ -69,6 +74,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             Exception ex, WebRequest request) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
         return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    }
+
+    private HttpStatus resolveHttpStatus(int statusCode) {
+        HttpStatus status = HttpStatus.resolve(statusCode);
+        if (status != null) {
+            return status;
+        }
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    private String extractDownstreamErrorMessage(HttpClientErrorException ex) {
+        String detailedMessage = ex.getMessage();
+        if (detailedMessage != null && !detailedMessage.isEmpty()) {
+            return detailedMessage;
+        }
+        return ex.getStatusText();
     }
 
     private ResponseEntity<ErrorResponseDto> buildErrorResponse(

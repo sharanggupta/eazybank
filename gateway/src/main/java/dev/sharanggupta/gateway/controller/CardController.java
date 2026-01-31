@@ -5,6 +5,7 @@ import dev.sharanggupta.gateway.dto.CreateCardRequest;
 import dev.sharanggupta.gateway.dto.ErrorResponseDto;
 import dev.sharanggupta.gateway.dto.ResponseDto;
 import dev.sharanggupta.gateway.dto.UpdateCardRequest;
+import dev.sharanggupta.gateway.exception.ResourceNotFoundException;
 import dev.sharanggupta.gateway.service.CardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,7 +53,9 @@ public class CardController {
     @GetMapping
     public ResponseEntity<CardInfoDto> getCard(
             @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE) String mobileNumber) {
-        return ResponseEntity.ok(cardService.getCard(mobileNumber));
+        CardInfoDto card = cardService.getCard(mobileNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Card", "mobileNumber", mobileNumber));
+        return ResponseEntity.ok(card);
     }
 
     @Operation(summary = "Update card", description = "Updates the card details for the customer identified by mobile number")
