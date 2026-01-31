@@ -184,7 +184,7 @@ jobs:
           esac
 
           NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-          GIT_TAG="v-${SERVICE}-${NEW_VERSION}"
+          GIT_TAG="${SERVICE}-v${NEW_VERSION}"
 
           # =================================================================
           # Step 6: Output results

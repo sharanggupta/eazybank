@@ -11,13 +11,13 @@ Each microservice maintains **independent semantic versions** tracked via **git 
 ### Version Format
 
 ```
-v-{service}-{major}.{minor}.{patch}
+{service}-v{major}.{minor}.{patch}
 
 Examples:
-v-account-0.1.2
-v-card-1.0.0
-v-gateway-0.2.3
-v-loan-0.0.5
+account-v0.1.2
+card-v1.0.0
+gateway-v0.2.3
+loan-v0.0.5
 ```
 
 ### How It Works
@@ -39,7 +39,7 @@ v-loan-0.0.5
                     ↓
 6. Deploys to staging, then production (with approval)
                     ↓
-7. Creates git tag: v-{service}-{version}
+7. Creates git tag: {service}-v{version}
    (Used as source of truth for future builds)
 ```
 
@@ -99,8 +99,8 @@ git commit -m "fix: resolve null pointer in card validation"
 ```
 Previous version: 0.1.2
 New version: 0.1.3 (PATCH bump)
-Git tag: v-card-0.1.3
-Docker image: ghcr.io/.../card:v-card-0.1.3
+Git tag: card-v0.1.3
+Docker image: ghcr.io/.../card:card-v0.1.3
 ```
 
 ### Example 2: New Feature
@@ -113,8 +113,8 @@ git commit -m "feat: add card limit increase endpoint"
 ```
 Previous version: 0.1.2
 New version: 0.2.0 (MINOR bump)
-Git tag: v-card-0.2.0
-Docker image: ghcr.io/.../card:v-card-0.2.0
+Git tag: card-v0.2.0
+Docker image: ghcr.io/.../card:card-v0.2.0
 ```
 
 ### Example 3: Breaking Change
@@ -129,8 +129,8 @@ BREAKING CHANGE: API now returns ISO 8601 timestamps instead of Unix epoch"
 ```
 Previous version: 0.2.1
 New version: 1.0.0 (MAJOR bump)
-Git tag: v-account-1.0.0
-Docker image: ghcr.io/.../account:v-account-1.0.0
+Git tag: account-v1.0.0
+Docker image: ghcr.io/.../account:account-v1.0.0
 ```
 
 ### Example 4: Documentation Only
@@ -194,7 +194,7 @@ Each service builds independently, each version bumps appropriately.
 │     └─ Apply bump logic
 │
 ├─ Build Docker image
-│  └─ Tag: ghcr.io/.../service:v-service-{version}
+│  └─ Tag: ghcr.io/.../service:service-v{version}
 │
 ├─ Deploy to staging
 │  └─ Auto-deploy with new image
@@ -206,7 +206,7 @@ Each service builds independently, each version bumps appropriately.
 │  └─ Deploy with approved image
 │
 └─ Create git tag
-   └─ v-service-{version}
+   └─ service-v{version}
       (Pushed to repo for future reference)
 ```
 
@@ -218,46 +218,46 @@ Each service builds independently, each version bumps appropriately.
 
 ```bash
 # Get latest git tag for account service
-git describe --tags --match "v-account-*" --abbrev=0
+git describe --tags --match "account-v*" --abbrev=0
 
-# Output: v-account-0.1.2
+# Output: account-v0.1.2
 ```
 
 ### View All Versions for a Service
 
 ```bash
 # List all tags for account service
-git tag -l "v-account-*"
+git tag -l "account-v*"
 
 # Output:
-# v-account-0.0.1
-# v-account-0.0.2
-# v-account-0.1.0
-# v-account-0.1.1
-# v-account-0.1.2
+# account-v0.0.1
+# account-v0.0.2
+# account-v0.1.0
+# account-v0.1.1
+# account-v0.1.2
 ```
 
 ### View All Versions (All Services)
 
 ```bash
 # Sort by version
-git tag -l "v-*" | sort -V
+git tag -l "*-v*" | sort -V
 
 # Output:
-# v-account-0.0.1
-# v-account-0.0.2
-# v-account-0.1.2
-# v-card-0.0.1
-# v-card-0.1.0
-# v-gateway-0.0.5
-# v-loan-0.0.1
+# account-v0.0.1
+# account-v0.0.2
+# account-v0.1.2
+# card-v0.0.1
+# card-v0.1.0
+# gateway-v0.0.5
+# loan-v0.0.1
 ```
 
 ### View Commits Since Last Release
 
 ```bash
 # For account service
-LAST_TAG=$(git describe --tags --match "v-account-*" --abbrev=0)
+LAST_TAG=$(git describe --tags --match "account-v*" --abbrev=0)
 git log ${LAST_TAG}..HEAD --oneline -- account/
 
 # Output:
