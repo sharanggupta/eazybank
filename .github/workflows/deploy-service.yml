@@ -95,6 +95,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch service-specific tags from remote
+        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
+
       - name: Display version info
         run: |
           echo "### 📊 Version Information" >> $GITHUB_STEP_SUMMARY
@@ -194,6 +197,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Fetch service-specific tags from remote
+        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
+
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
@@ -278,6 +284,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Fetch service-specific tags from remote
+        run: git fetch --tags origin "refs/tags/${{ inputs.service }}-v*:refs/tags/${{ inputs.service }}-v*"
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
