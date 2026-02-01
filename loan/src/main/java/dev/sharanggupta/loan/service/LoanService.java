@@ -1,14 +1,15 @@
 package dev.sharanggupta.loan.service;
 
 import dev.sharanggupta.loan.dto.LoanDto;
+import reactor.core.publisher.Mono;
 
 public interface LoanService {
 
-    void createLoan(LoanDto loanDto);
+    Mono<Void> createLoan(LoanDto loanDto);
 
-    LoanDto fetchLoan(String mobileNumber);
+    Mono<LoanDto> fetchLoan(String mobileNumber);
 
-    void updateLoan(LoanDto loanDto);
+    Mono<Void> updateLoan(LoanDto loanDto);
 
-    void deleteLoan(String mobileNumber);
+    Mono<Void> deleteLoan(String mobileNumber);
 }

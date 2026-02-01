@@ -8,13 +8,12 @@ import dev.sharanggupta.loan.mapper.LoanMapper;
 import dev.sharanggupta.loan.repository.LoanRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.Random;
 
 @Service
 @AllArgsConstructor
-@Transactional
 public class LoanServiceImpl implements LoanService {
 
     private static final int LOAN_NUMBER_LENGTH = 12;
@@ -23,44 +22,50 @@ public class LoanServiceImpl implements LoanService {
     private final LoanRepository loanRepository;
 
     @Override
-    public void createLoan(LoanDto loanDto) {
-        validateLoanDoesNotExist(loanDto.getMobileNumber());
-        Loan loan = LoanMapper.mapToLoan(loanDto, new Loan());
-        loan.setLoanNumber(generateLoanNumber());
-        loan.setAmountPaid(0);
-        loanRepository.save(loan);
+    public Mono<Void> createLoan(LoanDto loanDto) {
+        return validateLoanDoesNotExist(loanDto.getMobileNumber())
+                .then(Mono.defer(() -> {
+                    Loan loan = LoanMapper.mapToLoan(loanDto, new Loan());
+                    loan.setLoanNumber(generateLoanNumber());
+                    loan.setAmountPaid(0);
+                    return loanRepository.save(loan);
+                }))
+                .then();
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public LoanDto fetchLoan(String mobileNumber) {
-        Loan loan = getLoanByMobileNumber(mobileNumber);
-        return LoanMapper.mapToLoanDto(loan, new LoanDto());
+    public Mono<LoanDto> fetchLoan(String mobileNumber) {
+        return getLoanByMobileNumber(mobileNumber)
+                .map(loan -> LoanMapper.mapToLoanDto(loan, new LoanDto()));
     }
 
     @Override
-    public void updateLoan(LoanDto loanDto) {
-        Loan loan = getLoanByMobileNumber(loanDto.getMobileNumber());
-        LoanMapper.mapToLoan(loanDto, loan);
-        loanRepository.save(loan);
+    public Mono<Void> updateLoan(LoanDto loanDto) {
+        return getLoanByMobileNumber(loanDto.getMobileNumber())
+                .flatMap(loan -> {
+                    LoanMapper.mapToLoan(loanDto, loan);
+                    return loanRepository.save(loan);
+                })
+                .then();
     }
 
     @Override
-    public void deleteLoan(String mobileNumber) {
-        Loan loan = getLoanByMobileNumber(mobileNumber);
-        loanRepository.delete(loan);
+    public Mono<Void> deleteLoan(String mobileNumber) {
+        return getLoanByMobileNumber(mobileNumber)
+                .flatMap(loanRepository::delete)
+                .then();
     }
 
-    private void validateLoanDoesNotExist(String mobileNumber) {
-        loanRepository.findByMobileNumber(mobileNumber).ifPresent(loan -> {
-            throw new LoanAlreadyExistsException(
-                    "Loan already exists for mobile number " + mobileNumber);
-        });
-    }
-
-    private Loan getLoanByMobileNumber(String mobileNumber) {
+    private Mono<Void> validateLoanDoesNotExist(String mobileNumber) {
         return loanRepository.findByMobileNumber(mobileNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Loan", "mobileNumber", mobileNumber));
+                .flatMap(loan -> Mono.error(new LoanAlreadyExistsException(
+                        "Loan already exists for mobile number " + mobileNumber)))
+                .then();
+    }
+
+    private Mono<Loan> getLoanByMobileNumber(String mobileNumber) {
+        return loanRepository.findByMobileNumber(mobileNumber)
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Loan", "mobileNumber", mobileNumber)));
     }
 
     private String generateLoanNumber() {

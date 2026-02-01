@@ -1,35 +1,38 @@
 package dev.sharanggupta.loan.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "loan")
+@Table("loan")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class Loan extends BaseEntity {
 
     @Id
-    @Column(length = 12)
+    @Column("loan_id")
+    private Long loanId;
+
+    @Column("loan_number")
     private String loanNumber;
 
-    @Column(length = 15, nullable = false)
+    @Column("mobile_number")
     private String mobileNumber;
 
-    @Column(length = 100, nullable = false)
+    @Column("loan_type")
     private String loanType;
 
-    @Column(nullable = false)
+    @Column("total_loan")
     private int totalLoan;
 
-    @Column(nullable = false)
+    @Column("amount_paid")
     private int amountPaid;
 }

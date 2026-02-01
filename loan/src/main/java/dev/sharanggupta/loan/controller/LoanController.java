@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @Tag(name = "Loan REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE loan details")
 @RestController
@@ -42,10 +43,10 @@ public class LoanController {
     @Operation(summary = "Create loan", description = "REST API to create a new loan")
     @ApiResponse(responseCode = "201", description = "Loan created successfully")
     @PostMapping
-    public ResponseEntity<ResponseDto> createLoan(@Valid @RequestBody LoanDto loanDto) {
-        loanService.createLoan(loanDto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ResponseDto(STATUS_201, MESSAGE_201));
+    public Mono<ResponseEntity<ResponseDto>> createLoan(@Valid @RequestBody LoanDto loanDto) {
+        return loanService.createLoan(loanDto)
+                .thenReturn(ResponseEntity.status(HttpStatus.CREATED)
+                        .body(new ResponseDto(STATUS_201, MESSAGE_201)));
     }
 
     @Operation(summary = "Fetch loan", description = "REST API to fetch loan details by mobile number")
@@ -53,11 +54,11 @@ public class LoanController {
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @GetMapping
-    public ResponseEntity<LoanDto> fetchLoan(
+    public Mono<ResponseEntity<LoanDto>> fetchLoan(
             @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        LoanDto loanDto = loanService.fetchLoan(mobileNumber);
-        return ResponseEntity.ok(loanDto);
+        return loanService.fetchLoan(mobileNumber)
+                .map(ResponseEntity::ok);
     }
 
     @Operation(summary = "Update loan", description = "REST API to update loan details")
@@ -65,9 +66,9 @@ public class LoanController {
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @PutMapping
-    public ResponseEntity<Void> updateLoan(@Valid @RequestBody LoanDto loanDto) {
-        loanService.updateLoan(loanDto);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> updateLoan(@Valid @RequestBody LoanDto loanDto) {
+        return loanService.updateLoan(loanDto)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 
     @Operation(summary = "Delete loan", description = "REST API to delete loan by mobile number")
@@ -75,10 +76,10 @@ public class LoanController {
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @DeleteMapping
-    public ResponseEntity<Void> deleteLoan(
+    public Mono<ResponseEntity<Void>> deleteLoan(
             @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        loanService.deleteLoan(mobileNumber);
-        return ResponseEntity.noContent().build();
+        return loanService.deleteLoan(mobileNumber)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 }
