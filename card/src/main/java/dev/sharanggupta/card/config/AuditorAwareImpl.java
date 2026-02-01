@@ -1,4 +1,4 @@
-package dev.sharanggupta.account.config;
+package dev.sharanggupta.card.config;
 
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.ReactiveAuditorAware;

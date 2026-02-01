@@ -1,6 +1,6 @@
-package dev.sharanggupta.account.config;
+package dev.sharanggupta.card.config;
 
-import dev.sharanggupta.account.entity.BaseEntity;
+import dev.sharanggupta.card.entity.BaseEntity;
 import org.reactivestreams.Publisher;
 import org.springframework.data.domain.ReactiveAuditorAware;
 import org.springframework.data.r2dbc.mapping.event.BeforeConvertCallback;

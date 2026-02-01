@@ -13,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CardEndToEndTest extends BaseEndToEndTest {
 
-    private static final String CARD_API_PATH = "/card/api";
+    private static final String CARD_API_PATH = "/api";
     private static final String VALID_MOBILE_NUMBER = "1234567890";
     private static final String CREDIT_CARD_TYPE = "Credit Card";
-    private static final int DEFAULT_TOTAL_LIMIT = 100000;
+    private static final int DEFAULT_TOTAL_LIMIT = 100_000;
     private static final String STATUS_201 = "201";
     private static final String CARD_CREATED_MESSAGE = "Card created successfully";
 
@@ -25,7 +25,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
 
     @AfterEach
     void tearDown() {
-        cardRepository.deleteAll();
+        cardRepository.deleteAll().block(); // block here is ok for cleanup
     }
 
     @Test
@@ -36,7 +36,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(CARD_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(cardRequest)
+                .bodyValue(cardRequest)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
@@ -50,7 +50,6 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @DisplayName("Should fetch card by mobile number")
     void shouldFetchCardByMobileNumber() {
         CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
-
         createCard(cardRequest);
 
         client.get()
@@ -74,22 +73,26 @@ class CardEndToEndTest extends BaseEndToEndTest {
         createCard(cardRequest);
 
         CardDto existingCard = fetchCard(VALID_MOBILE_NUMBER);
-        int updatedLimit = 200000;
-        int amountUsed = 50000;
-        existingCard.setTotalLimit(updatedLimit);
-        existingCard.setAmountUsed(amountUsed);
+
+        CardDto updatedCard = CardDto.builder()
+                .mobileNumber(existingCard.getMobileNumber())
+                .cardNumber(existingCard.getCardNumber())
+                .cardType(existingCard.getCardType())
+                .totalLimit(200_000)
+                .amountUsed(50_000)
+                .build();
 
         client.put()
                 .uri(CARD_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(existingCard)
+                .bodyValue(updatedCard)
                 .exchange()
                 .expectStatus().isNoContent();
 
-        CardDto updatedCard = fetchCard(VALID_MOBILE_NUMBER);
-        assertThat(updatedCard.getTotalLimit()).isEqualTo(updatedLimit);
-        assertThat(updatedCard.getAmountUsed()).isEqualTo(amountUsed);
-        assertThat(updatedCard.getAvailableAmount()).isEqualTo(updatedLimit - amountUsed);
+        CardDto fetched = fetchCard(VALID_MOBILE_NUMBER);
+        assertThat(fetched.getTotalLimit()).isEqualTo(200_000);
+        assertThat(fetched.getAmountUsed()).isEqualTo(50_000);
+        assertThat(fetched.getAvailableAmount()).isEqualTo(150_000);
     }
 
     @Test
@@ -118,7 +121,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(CARD_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(cardRequest)
+                .bodyValue(cardRequest)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -132,11 +135,15 @@ class CardEndToEndTest extends BaseEndToEndTest {
                 .expectStatus().isNotFound();
     }
 
+    // ----------------------
+    // Helpers
+    // ----------------------
+
     private void createCard(CardDto cardDto) {
         client.post()
                 .uri(CARD_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(cardDto)
+                .bodyValue(cardDto)
                 .exchange()
                 .expectStatus().isCreated();
     }
@@ -152,10 +159,11 @@ class CardEndToEndTest extends BaseEndToEndTest {
     }
 
     private CardDto createCardRequest(String mobileNumber, String cardType, int totalLimit) {
-        CardDto cardDto = new CardDto();
-        cardDto.setMobileNumber(mobileNumber);
-        cardDto.setCardType(cardType);
-        cardDto.setTotalLimit(totalLimit);
-        return cardDto;
+        return CardDto.builder()
+                .mobileNumber(mobileNumber)
+                .cardType(cardType)
+                .totalLimit(totalLimit)
+                .amountUsed(0)
+                .build();
     }
 }

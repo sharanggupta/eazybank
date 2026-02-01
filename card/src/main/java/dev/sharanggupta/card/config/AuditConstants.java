@@ -1,4 +1,4 @@
-package dev.sharanggupta.account.config;
+package dev.sharanggupta.card.config;
 
 /**
  * Constants used for entity auditing across the application.

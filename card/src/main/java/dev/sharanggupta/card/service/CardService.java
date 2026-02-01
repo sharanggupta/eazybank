@@ -1,14 +1,15 @@
 package dev.sharanggupta.card.service;
 
 import dev.sharanggupta.card.dto.CardDto;
+import reactor.core.publisher.Mono;
 
 public interface CardService {
 
-    void createCard(CardDto cardDto);
+    Mono<Void> createCard(CardDto cardDto);
 
-    CardDto fetchCard(String mobileNumber);
+    Mono<CardDto> fetchCard(String mobileNumber);
 
-    void updateCard(CardDto cardDto);
+    Mono<Void> updateCard(CardDto cardDto);
 
-    void deleteCard(String mobileNumber);
+    Mono<Void> deleteCard(String mobileNumber);
 }
