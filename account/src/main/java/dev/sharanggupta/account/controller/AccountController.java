@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Tag(name = "Account REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE account details")
 @RestController
 @RequestMapping(path = "/api", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -52,11 +50,8 @@ public class AccountController {
     public Mono<ResponseEntity<ResponseDto>> createAccount(@Valid @RequestBody Mono<CustomerDto> customerDtoMono) {
         return customerDtoMono
                 .flatMap(accountService::createAccount)
-                .doOnSuccess(v -> log.info("Account creation completed successfully"))
-                .doOnError(e -> log.error("Error creating account: {}", e.getMessage(), e))
                 .then(Mono.just(ResponseEntity.status(HttpStatus.CREATED)
-                        .body(new ResponseDto(STATUS_201, MESSAGE_201))))
-                .doOnNext(response -> log.info("Sending response: {}", response.getStatusCode()));
+                        .body(new ResponseDto(STATUS_201, MESSAGE_201))));
     }
 
     @Operation(summary = "Fetch account", description = "REST API to fetch customer and account details by mobile number")

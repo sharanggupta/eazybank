@@ -6,9 +6,9 @@ spring:
   application:
     name: account
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/accountdb
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres}
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/accountdb}
+    username: ${SPRING_R2DBC_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_R2DBC_PASSWORD:${POSTGRES_PASSWORD:postgres}}
     pool:
       initial-size: 10
       max-size: 20

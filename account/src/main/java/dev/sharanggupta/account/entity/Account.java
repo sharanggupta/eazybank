@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("account")
@@ -13,7 +14,10 @@ import org.springframework.data.relational.core.mapping.Table;
 public class Account extends BaseEntity {
 
     @Id
-    private Long accountNumber;
+    private Long accountId;
+
+    @Column("account_number")
+    private String accountNumber;
 
     private Long customerId;
 
