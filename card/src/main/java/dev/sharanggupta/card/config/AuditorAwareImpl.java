@@ -1,26 +1,16 @@
-package dev.sharanggupta.card.config;
+package dev.sharanggupta.account.config;
 
 import jakarta.annotation.Nonnull;
-import org.springframework.data.domain.AuditorAware;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.data.domain.ReactiveAuditorAware;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
-public class AuditorAwareImpl implements AuditorAware<String> {
-
-    private static final String AUDITOR_HEADER = "X-User-ID";
-    private static final String DEFAULT_AUDITOR = "ANONYMOUS";
+@Component
+public class AuditorAwareImpl implements ReactiveAuditorAware<String> {
 
     @Override
     @Nonnull
-    public Optional<String> getCurrentAuditor() {
-        return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
-                .filter(ServletRequestAttributes.class::isInstance)
-                .map(ServletRequestAttributes.class::cast)
-                .map(ServletRequestAttributes::getRequest)
-                .map(request -> request.getHeader(AUDITOR_HEADER))
-                .filter(header -> !header.isBlank())
-                .or(() -> Optional.of(DEFAULT_AUDITOR));
+    public Mono<String> getCurrentAuditor() {
+        return Mono.just(AuditConstants.SYSTEM_AUDITOR);
     }
 }

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @Tag(name = "Card REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE card details")
 @RestController
@@ -42,32 +43,42 @@ public class CardController {
     @Operation(summary = "Create card", description = "REST API to create a new card")
     @ApiResponse(responseCode = "201", description = "Card created successfully")
     @PostMapping
-    public ResponseEntity<ResponseDto> createCard(@Valid @RequestBody CardDto cardDto) {
-        cardService.createCard(cardDto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ResponseDto(STATUS_201, MESSAGE_201));
+    public Mono<ResponseEntity<ResponseDto>> createCard(
+            @Valid @RequestBody CardDto cardDto) {
+
+        return cardService.createCard(cardDto)
+                .thenReturn(
+                        ResponseEntity.status(HttpStatus.CREATED)
+                                .body(new ResponseDto(STATUS_201, MESSAGE_201))
+                );
     }
 
     @Operation(summary = "Fetch card", description = "REST API to fetch card details by mobile number")
     @ApiResponse(responseCode = "200", description = "Card fetched successfully")
-    @ApiResponse(responseCode = "404", description = "Card not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    @ApiResponse(
+            responseCode = "404",
+            description = "Card not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))
+    )
     @GetMapping
-    public ResponseEntity<CardDto> fetchCard(
-            @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+    public Mono<ResponseEntity<CardDto>> fetchCard(
+            @RequestParam
+            @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        CardDto cardDto = cardService.fetchCard(mobileNumber);
-        return ResponseEntity.ok(cardDto);
+
+        return cardService.fetchCard(mobileNumber)
+                .map(ResponseEntity::ok);
     }
+
 
     @Operation(summary = "Update card", description = "REST API to update card details")
     @ApiResponse(responseCode = "204", description = "Card updated successfully")
     @ApiResponse(responseCode = "404", description = "Card not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @PutMapping
-    public ResponseEntity<Void> updateCard(@Valid @RequestBody CardDto cardDto) {
-        cardService.updateCard(cardDto);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> updateCard(@Valid @RequestBody CardDto cardDto) {
+        return cardService.updateCard(cardDto)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 
     @Operation(summary = "Delete card", description = "REST API to delete card by mobile number")
@@ -75,10 +86,10 @@ public class CardController {
     @ApiResponse(responseCode = "404", description = "Card not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @DeleteMapping
-    public ResponseEntity<Void> deleteCard(
+    public Mono<ResponseEntity<Void>> deleteCard(
             @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        cardService.deleteCard(mobileNumber);
-        return ResponseEntity.noContent().build();
+        return cardService.deleteCard(mobileNumber)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 }
