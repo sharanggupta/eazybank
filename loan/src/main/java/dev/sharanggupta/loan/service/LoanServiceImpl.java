@@ -16,36 +16,37 @@ import java.util.Random;
 @AllArgsConstructor
 public class LoanServiceImpl implements LoanService {
 
-    private static final int LOAN_NUMBER_LENGTH = 12;
-    private static final Random random = new Random();
-
+    private static final int LOAN_NUMBER_LENGTH = 12; // example length
     private final LoanRepository loanRepository;
+    private final Random random = new Random();
 
     @Override
     public Mono<Void> createLoan(LoanDto loanDto) {
-        return validateLoanDoesNotExist(loanDto.getMobileNumber())
-                .then(Mono.defer(() -> {
-                    Loan loan = LoanMapper.mapToLoan(loanDto, new Loan());
-                    loan.setLoanNumber(generateLoanNumber());
-                    loan.setAmountPaid(0);
-                    return loanRepository.save(loan);
-                }))
+        Loan loan = LoanMapper.mapToEntity(loanDto)
+                .toBuilder()
+                .loanNumber(generateLoanNumber())
+                .amountPaid(0)
+                .build();
+
+        return loanRepository.findByMobileNumber(loanDto.getMobileNumber())
+                .flatMap(existing -> Mono.error(new LoanAlreadyExistsException(
+                        "Loan already exists for mobile number " + loanDto.getMobileNumber()
+                )))
+                .switchIfEmpty(loanRepository.save(loan))
                 .then();
     }
 
     @Override
     public Mono<LoanDto> fetchLoan(String mobileNumber) {
         return getLoanByMobileNumber(mobileNumber)
-                .map(loan -> LoanMapper.mapToLoanDto(loan, new LoanDto()));
+                .map(LoanMapper::mapToDto);
     }
 
     @Override
     public Mono<Void> updateLoan(LoanDto loanDto) {
         return getLoanByMobileNumber(loanDto.getMobileNumber())
-                .flatMap(loan -> {
-                    LoanMapper.mapToLoan(loanDto, loan);
-                    return loanRepository.save(loan);
-                })
+                .map(existing -> LoanMapper.updateEntity(loanDto, existing))
+                .flatMap(loanRepository::save)
                 .then();
     }
 
@@ -56,23 +57,22 @@ public class LoanServiceImpl implements LoanService {
                 .then();
     }
 
-    private Mono<Void> validateLoanDoesNotExist(String mobileNumber) {
-        return loanRepository.findByMobileNumber(mobileNumber)
-                .flatMap(loan -> Mono.error(new LoanAlreadyExistsException(
-                        "Loan already exists for mobile number " + mobileNumber)))
-                .then();
-    }
+    // -----------------------
+    // Helpers
+    // -----------------------
 
     private Mono<Loan> getLoanByMobileNumber(String mobileNumber) {
         return loanRepository.findByMobileNumber(mobileNumber)
-                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Loan", "mobileNumber", mobileNumber)));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                        "Loan", "mobileNumber", mobileNumber
+                )));
     }
 
     private String generateLoanNumber() {
-        StringBuilder loanNumber = new StringBuilder(LOAN_NUMBER_LENGTH);
+        StringBuilder sb = new StringBuilder(LOAN_NUMBER_LENGTH);
         for (int i = 0; i < LOAN_NUMBER_LENGTH; i++) {
-            loanNumber.append(random.nextInt(10));
+            sb.append(random.nextInt(10));
         }
-        return loanNumber.toString();
+        return sb.toString();
     }
 }

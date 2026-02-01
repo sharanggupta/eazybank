@@ -13,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LoanEndToEndTest extends BaseEndToEndTest {
 
-    private static final String LOAN_API_PATH = "/loan/api";
+    private static final String LOAN_API_PATH = "/api";
     private static final String VALID_MOBILE_NUMBER = "1234567890";
     private static final String HOME_LOAN_TYPE = "Home Loan";
-    private static final int DEFAULT_TOTAL_LOAN = 500000;
+    private static final int DEFAULT_TOTAL_LOAN = 500_000;
     private static final String STATUS_201 = "201";
     private static final String LOAN_CREATED_MESSAGE = "Loan created successfully";
 
@@ -25,7 +25,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
 
     @AfterEach
     void tearDown() {
-        loanRepository.deleteAll();
+        loanRepository.deleteAll().block(); // block here is ok for cleanup
     }
 
     @Test
@@ -36,7 +36,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(LOAN_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanRequest)
+                .bodyValue(loanRequest)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
@@ -75,19 +75,22 @@ class LoanEndToEndTest extends BaseEndToEndTest {
         createLoan(loanRequest);
 
         LoanDto existingLoan = fetchLoan(VALID_MOBILE_NUMBER);
-        int amountPaid = 100000;
-        existingLoan.setAmountPaid(amountPaid);
+
+        int amountPaid = 100_000;
+        LoanDto updatedLoan = existingLoan.toBuilder()
+                .amountPaid(amountPaid)
+                .build();
 
         client.put()
                 .uri(LOAN_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(existingLoan)
+                .bodyValue(updatedLoan)
                 .exchange()
                 .expectStatus().isNoContent();
 
-        LoanDto updatedLoan = fetchLoan(VALID_MOBILE_NUMBER);
-        assertThat(updatedLoan.getAmountPaid()).isEqualTo(amountPaid);
-        assertThat(updatedLoan.getOutstandingAmount()).isEqualTo(DEFAULT_TOTAL_LOAN - amountPaid);
+        LoanDto fetched = fetchLoan(VALID_MOBILE_NUMBER);
+        assertThat(fetched.getAmountPaid()).isEqualTo(amountPaid);
+        assertThat(fetched.getOutstandingAmount()).isEqualTo(DEFAULT_TOTAL_LOAN - amountPaid);
     }
 
     @Test
@@ -116,7 +119,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(LOAN_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanRequest)
+                .bodyValue(loanRequest)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -130,11 +133,15 @@ class LoanEndToEndTest extends BaseEndToEndTest {
                 .expectStatus().isNotFound();
     }
 
+    // ----------------------
+    // Helpers
+    // ----------------------
+
     private void createLoan(LoanDto loanDto) {
         client.post()
                 .uri(LOAN_API_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanDto)
+                .bodyValue(loanDto)
                 .exchange()
                 .expectStatus().isCreated();
     }
@@ -150,10 +157,11 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     }
 
     private LoanDto createLoanRequest(String mobileNumber, String loanType, int totalLoan) {
-        LoanDto loanDto = new LoanDto();
-        loanDto.setMobileNumber(mobileNumber);
-        loanDto.setLoanType(loanType);
-        loanDto.setTotalLoan(totalLoan);
-        return loanDto;
+        return LoanDto.builder()
+                .mobileNumber(mobileNumber)
+                .loanType(loanType)
+                .totalLoan(totalLoan)
+                .amountPaid(0)
+                .build();
     }
 }
