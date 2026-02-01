@@ -7,7 +7,7 @@ public record AccountResponse(
         AccountDto accountDto
 ) {
     public record AccountDto(
-            Long accountNumber,
+            String accountNumber,
             String accountType,
             String branchAddress
     ) {}

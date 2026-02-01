@@ -12,8 +12,8 @@ public record AccountInfoDto(
         @Schema(description = "Customer's email address", example = "john.doe@example.com")
         String email,
 
-        @Schema(description = "Unique account number", example = "1087654321")
-        Long accountNumber,
+        @Schema(description = "Unique account number (17-digit structured format)", example = "00010050123456789012")
+        String accountNumber,
 
         @Schema(description = "Type of account", example = "Savings")
         String accountType,

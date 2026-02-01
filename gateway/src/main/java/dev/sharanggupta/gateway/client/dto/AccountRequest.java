@@ -7,7 +7,7 @@ public record AccountRequest(
         AccountDto accountDto
 ) {
     public record AccountDto(
-            Long accountNumber,
+            String accountNumber,
             String accountType,
             String branchAddress
     ) {}
