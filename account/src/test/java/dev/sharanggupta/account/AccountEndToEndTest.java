@@ -9,15 +9,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AccountEndToEndTest extends BaseEndToEndTest {
 
-    private static final String API_CREATE_PATH = "/account/api/create";
-    private static final String API_FETCH_PATH = "/account/api/fetch";
-    private static final String API_UPDATE_PATH = "/account/api/update";
-    private static final String API_DELETE_PATH = "/account/api/delete";
+    private static final String API_CREATE_PATH = "/api/create";
+    private static final String API_FETCH_PATH = "/api/fetch";
+    private static final String API_UPDATE_PATH = "/api/update";
+    private static final String API_DELETE_PATH = "/api/delete";
 
     private static final String VALID_NAME = "Test Customer";
     private static final String VALID_EMAIL = "test@example.com";
@@ -33,8 +34,8 @@ class AccountEndToEndTest extends BaseEndToEndTest {
 
     @AfterEach
     void tearDown() {
-        accountRepository.deleteAll();
-        customerRepository.deleteAll();
+        accountRepository.deleteAll().block();
+        customerRepository.deleteAll().block();
     }
 
     @Test
@@ -45,7 +46,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerRequest)
+                .body(Mono.just(customerRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
@@ -88,7 +89,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.put()
                 .uri(API_UPDATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(existingCustomer)
+                .body(Mono.just(existingCustomer), CustomerDto.class)
                 .exchange()
                 .expectStatus().isNoContent();
 
@@ -123,7 +124,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerRequest)
+                .body(Mono.just(customerRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -141,7 +142,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerDto)
+                .body(Mono.just(customerDto), CustomerDto.class)
                 .exchange()
                 .expectStatus().isCreated();
     }

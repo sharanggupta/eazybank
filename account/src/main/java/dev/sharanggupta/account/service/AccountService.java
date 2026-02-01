@@ -1,17 +1,18 @@
 package dev.sharanggupta.account.service;
 
 import dev.sharanggupta.account.dto.CustomerDto;
+import reactor.core.publisher.Mono;
 
 public interface AccountService {
 /**
 *
  * @param customerDto encapsulates customer information captured
 */
-    void createAccount(CustomerDto customerDto);
+    Mono<Void> createAccount(CustomerDto customerDto);
 
-    CustomerDto fetchAccountDetails(String mobileNumber);
+    Mono<CustomerDto> fetchAccountDetails(String mobileNumber);
 
-    void updateAccount(CustomerDto customerDto);
+    Mono<Void> updateAccount(CustomerDto customerDto);
 
-    void deleteAccount(String mobileNumber);
+    Mono<Void> deleteAccount(String mobileNumber);
 }

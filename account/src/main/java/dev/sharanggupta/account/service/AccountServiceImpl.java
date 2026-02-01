@@ -13,100 +13,93 @@ import dev.sharanggupta.account.repository.AccountRepository;
 import dev.sharanggupta.account.repository.CustomerRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @AllArgsConstructor
-@Transactional
 public class AccountServiceImpl implements AccountService {
 
     private static final String DEFAULT_ACCOUNT_TYPE = "Savings";
     private static final String DEFAULT_BRANCH_ADDRESS = "123 Main Street, New York";
-    private static final Random random = new Random();
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final AccountNumberGenerator accountNumberGenerator;
 
     @Override
-    public void createAccount(CustomerDto customerDto) {
-        validateCustomerDoesNotExist(customerDto.getMobileNumber());
-        Customer customer = CustomerMapper.mapToCustomer(customerDto, new Customer());
-        Customer savedCustomer = customerRepository.save(customer);
-        accountRepository.save(createNewAccount(savedCustomer));
+    public Mono<Void> createAccount(CustomerDto customerDto) {
+        return validateCustomerDoesNotExist(customerDto.getMobileNumber())
+                .then(Mono.defer(() -> {
+                    Customer customer = CustomerMapper.mapToCustomer(customerDto, new Customer());
+                    return customerRepository.save(customer);
+                }))
+                .flatMap(savedCustomer -> {
+                    Account account = createNewAccount(savedCustomer);
+                    return accountRepository.save(account);
+                })
+                .then();
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public CustomerDto fetchAccountDetails(String mobileNumber) {
-        Customer customer = getCustomerByMobileNumber(mobileNumber);
-        Account account = getAccountByCustomerId(customer.getCustomerId());
-        CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
-        customerDto.setAccountDto(AccountMapper.mapToAccountDto(account, new AccountDto()));
-        return customerDto;
+    public Mono<CustomerDto> fetchAccountDetails(String mobileNumber) {
+        return customerRepository.findByMobileNumber(mobileNumber)
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)))
+                .flatMap(customer -> accountRepository.findByCustomerId(customer.getCustomerId())
+                        .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Account", "customerId", customer.getCustomerId().toString())))
+                        .map(account -> {
+                            CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
+                            customerDto.setAccountDto(AccountMapper.mapToAccountDto(account, new AccountDto()));
+                            return customerDto;
+                        })
+                );
     }
 
     @Override
-    public void updateAccount(CustomerDto customerDto) {
+    public Mono<Void> updateAccount(CustomerDto customerDto) {
         AccountDto accountDto = Optional.ofNullable(customerDto.getAccountDto())
                 .orElseThrow(() -> new AccountDetailsMissingException("Account details are required for update"));
 
-        Long accountNumber = Optional.ofNullable(accountDto.getAccountNumber())
+        String accountNumber = Optional.ofNullable(accountDto.getAccountNumber())
                 .orElseThrow(() -> new AccountDetailsMissingException("Account number is required for update"));
 
-        Account account = getAccountByAccountNumber(accountNumber);
-        Customer customer = getCustomerByCustomerId(account.getCustomerId());
-
-        CustomerMapper.mapToCustomer(customerDto, customer);
-        AccountMapper.mapToAccount(accountDto, account);
+        return accountRepository.findByAccountNumber(accountNumber)
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Account", "accountNumber", accountNumber)))
+                .flatMap(account -> customerRepository.findById(account.getCustomerId())
+                        .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "customerId", account.getCustomerId().toString())))
+                        .flatMap(customer -> {
+                            CustomerMapper.mapToCustomer(customerDto, customer);
+                            AccountMapper.mapToAccount(accountDto, account);
+                            return customerRepository.save(customer)
+                                    .then(accountRepository.save(account));
+                        })
+                )
+                .then();
     }
 
     @Override
-    public void deleteAccount(String mobileNumber) {
-        Customer customer = getCustomerByMobileNumber(mobileNumber);
-        accountRepository.deleteByCustomerId(customer.getCustomerId());
-        customerRepository.deleteById(customer.getCustomerId());
-    }
-
-    private void validateCustomerDoesNotExist(String mobileNumber) {
-        customerRepository.findByMobileNumber(mobileNumber).ifPresent(customer -> {
-            throw new CustomerAlreadyExistsException(
-                    "Customer already registered with mobile number " + mobileNumber);
-        });
-    }
-
-    private Customer getCustomerByMobileNumber(String mobileNumber) {
+    public Mono<Void> deleteAccount(String mobileNumber) {
         return customerRepository.findByMobileNumber(mobileNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber));
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)))
+                .flatMap(customer -> accountRepository.deleteByCustomerId(customer.getCustomerId())
+                        .then(customerRepository.delete(customer))
+                );
     }
 
-    private Account getAccountByCustomerId(Long customerId) {
-        return accountRepository.findByCustomerId(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account", "customerId", customerId.toString()));
-    }
-
-    private Account getAccountByAccountNumber(Long accountNumber) {
-        return accountRepository.findById(accountNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Account", "accountNumber", accountNumber.toString()));
-    }
-
-    private Customer getCustomerByCustomerId(Long customerId) {
-        return customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer", "customerId", customerId.toString()));
+    private Mono<Void> validateCustomerDoesNotExist(String mobileNumber) {
+        return customerRepository.findByMobileNumber(mobileNumber)
+                .flatMap(customer -> Mono.error(new CustomerAlreadyExistsException(
+                        "Customer already registered with mobile number " + mobileNumber)))
+                .then();
     }
 
     private Account createNewAccount(Customer customer) {
         Account account = new Account();
         account.setCustomerId(customer.getCustomerId());
-        account.setAccountNumber(generateAccountNumber());
+        account.setAccountNumber(accountNumberGenerator.generate());
         account.setAccountType(DEFAULT_ACCOUNT_TYPE);
         account.setBranchAddress(DEFAULT_BRANCH_ADDRESS);
         return account;
-    }
-
-    private long generateAccountNumber() {
-        return 1000000000L + random.nextInt(900000000);
     }
 }

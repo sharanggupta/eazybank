@@ -3,6 +3,8 @@ package dev.sharanggupta.account.controller;
 import dev.sharanggupta.account.dto.CustomerDto;
 import dev.sharanggupta.account.dto.ErrorResponseDto;
 import dev.sharanggupta.account.dto.ResponseDto;
+import dev.sharanggupta.account.exception.CustomerAlreadyExistsException;
+import dev.sharanggupta.account.exception.ResourceNotFoundException;
 import dev.sharanggupta.account.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +27,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
+@Slf4j
 @Tag(name = "Account REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE account details")
 @RestController
 @RequestMapping(path = "/api", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -44,10 +49,14 @@ public class AccountController {
     @ApiResponse(responseCode = "400", description = "Customer already exists",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @PostMapping("/create")
-    public ResponseEntity<ResponseDto> createAccount(@Valid @RequestBody CustomerDto customerDto) {
-        accountService.createAccount(customerDto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ResponseDto(STATUS_201, MESSAGE_201));
+    public Mono<ResponseEntity<ResponseDto>> createAccount(@Valid @RequestBody Mono<CustomerDto> customerDtoMono) {
+        return customerDtoMono
+                .flatMap(accountService::createAccount)
+                .doOnSuccess(v -> log.info("Account creation completed successfully"))
+                .doOnError(e -> log.error("Error creating account: {}", e.getMessage(), e))
+                .then(Mono.just(ResponseEntity.status(HttpStatus.CREATED)
+                        .body(new ResponseDto(STATUS_201, MESSAGE_201))))
+                .doOnNext(response -> log.info("Sending response: {}", response.getStatusCode()));
     }
 
     @Operation(summary = "Fetch account", description = "REST API to fetch customer and account details by mobile number")
@@ -55,11 +64,11 @@ public class AccountController {
     @ApiResponse(responseCode = "404", description = "Account not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @GetMapping("/fetch")
-    public ResponseEntity<CustomerDto> fetchAccountDetails(
+    public Mono<ResponseEntity<CustomerDto>> fetchAccountDetails(
             @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        CustomerDto customerDto = accountService.fetchAccountDetails(mobileNumber);
-        return ResponseEntity.ok(customerDto);
+        return accountService.fetchAccountDetails(mobileNumber)
+                .map(ResponseEntity::ok);
     }
 
     @Operation(summary = "Update account", description = "REST API to update customer and account details")
@@ -67,9 +76,10 @@ public class AccountController {
     @ApiResponse(responseCode = "404", description = "Account not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @PutMapping("/update")
-    public ResponseEntity<Void> updateAccountDetails(@Valid @RequestBody CustomerDto customerDto) {
-        accountService.updateAccount(customerDto);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> updateAccountDetails(@Valid @RequestBody Mono<CustomerDto> customerDtoMono) {
+        return customerDtoMono
+                .flatMap(accountService::updateAccount)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 
     @Operation(summary = "Delete account", description = "REST API to delete customer and account by mobile number")
@@ -77,10 +87,10 @@ public class AccountController {
     @ApiResponse(responseCode = "404", description = "Account not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
     @DeleteMapping("/delete")
-    public ResponseEntity<Void> deleteAccountDetails(
+    public Mono<ResponseEntity<Void>> deleteAccountDetails(
             @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
-        accountService.deleteAccount(mobileNumber);
-        return ResponseEntity.noContent().build();
+        return accountService.deleteAccount(mobileNumber)
+                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 }

@@ -1,14 +1,13 @@
 package dev.sharanggupta.account.repository;
 
 import dev.sharanggupta.account.entity.Customer;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, Long> {
+public interface CustomerRepository extends ReactiveCrudRepository<Customer, Long> {
 
-    Optional<Customer> findByMobileNumber(String mobileNumber);
+    Mono<Customer> findByMobileNumber(String mobileNumber);
 
 }
