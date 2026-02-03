@@ -47,7 +47,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [account, card, loan, gateway]
+        service: [account, card, loan, customergateway]
 
     outputs:
       image_tag: ${{ steps.semver.outputs.version }}
@@ -203,7 +203,7 @@ jobs:
             -f ./deploy/helm/services/loan/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/staging/k8s-values.yaml
 
-      - name: Deploy gateway to staging
+      - name: Deploy customergateway to staging
         run: |
           helm upgrade --install gateway ./deploy/helm/service-chart \
             --namespace eazybank-staging \
@@ -336,7 +336,7 @@ jobs:
             -f ./deploy/helm/services/loan/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/prod/k8s-values.yaml
 
-      - name: Deploy gateway to production
+      - name: Deploy customergateway to production
         run: |
           helm upgrade --install gateway ./deploy/helm/service-chart \
             --namespace eazybank-prod \

@@ -17,7 +17,7 @@ k8s:
   ingress:
     enabled: true
     className: "nginx"
-    host: "gateway.example.com"
+    host: "customergateway.example.com"
     tls: []
 
   service:

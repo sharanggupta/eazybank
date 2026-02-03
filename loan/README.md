@@ -252,7 +252,7 @@ cd loan
 When loan service fails:
 
 ```bash
-# GET /api/customer/1234567890 on gateway with loan service down
+# GET /api/customer/1234567890 on customergateway with loan service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },

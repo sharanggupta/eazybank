@@ -149,9 +149,9 @@ Workflow skips build/deploy
 ### Example 5: Multiple Services Changed
 
 ```bash
-# Changed files: gateway/src/..., account/src/..., docs/...
+# Changed files: customergateway/src/..., account/src/..., docs/...
 
-git add gateway/src account/src docs/
+git add customergateway/src account/src docs/
 git commit -m "feat: add authentication middleware to gateway
 
 - Implement JWT validation in WriteGateInterceptor
@@ -249,7 +249,7 @@ git tag -l "*-v*" | sort -V
 # account-v0.1.2
 # card-v0.0.1
 # card-v0.1.0
-# gateway-v0.0.5
+# customergateway-v0.0.5
 # loan-v0.0.1
 ```
 
@@ -306,7 +306,7 @@ git commit -m "feat: add customer data export
 # Update Spring Boot version for all services
 cd pom.xml  # Parent pom
 
-git add pom.xml account/ card/ loan/ gateway/
+git add pom.xml account/ card/ loan/ customergateway/
 git commit -m "chore: upgrade Spring Boot to 4.1.0
 
 Updated all services to Spring Boot 4.1.0 for security patches"
@@ -346,7 +346,7 @@ Updated all services to Spring Boot 4.1.0 for security patches"
    # See what changed in last commit
    git diff HEAD~1 --name-only
 
-   # Should include: account/**, card/**, loan/**, or gateway/**
+   # Should include: account/**, card/**, loan/**, or customergateway/**
    ```
 
 3. If message was wrong, amend:

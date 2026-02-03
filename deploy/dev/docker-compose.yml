@@ -60,7 +60,7 @@ services:
 
   gateway:
     image: eazybank/gateway
-    container_name: eazybank-gateway
+    container_name: eazybank-customergateway
     ports:
       - "8000:8000"
     environment:

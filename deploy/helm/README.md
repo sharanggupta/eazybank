@@ -82,9 +82,9 @@ Final values = Chart defaults + Service identity + Environment overrides
 The gateway has no database (`postgresql.enabled: false`) and routes to backend services via environment variables:
 
 ```yaml
-# services/gateway/values.yaml
+# services/customergateway/values.yaml
 service:
-  name: gateway
+  name: customergateway
   port: 8000
 
 app:
@@ -181,17 +181,17 @@ helm upgrade --install account ./deploy/helm/service-chart \
   -f ./deploy/helm/services/account/environments/staging/app-values.yaml \
   -f ./deploy/helm/services/account/environments/staging/k8s-values.yaml
 
-# Deploy the gateway (no database secrets needed)
-helm upgrade --install gateway ./deploy/helm/service-chart \
+# Deploy the customergateway (no database secrets needed)
+helm upgrade --install customergateway ./deploy/helm/service-chart \
   --namespace eazybank-staging \
-  --set image.repository=ghcr.io/sharanggupta/eazybank/gateway \
+  --set image.repository=ghcr.io/sharanggupta/eazybank/customergateway \
   --set image.tag=$IMAGE_TAG \
-  -f ./deploy/helm/services/gateway/values.yaml \
-  -f ./deploy/helm/services/gateway/environments/staging/app-values.yaml \
-  -f ./deploy/helm/services/gateway/environments/staging/k8s-values.yaml
+  -f ./deploy/helm/services/customergateway/values.yaml \
+  -f ./deploy/helm/services/customergateway/environments/staging/app-values.yaml \
+  -f ./deploy/helm/services/customergateway/environments/staging/k8s-values.yaml
 
 # Or use the deploy script
-./deploy.sh gateway staging
+./deploy.sh customergateway staging
 ./deploy.sh account staging
 
 # Verify

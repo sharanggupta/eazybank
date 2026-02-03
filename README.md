@@ -72,7 +72,7 @@ The gateway exposes:
 cd deploy/dev
 ./build-images.sh
 
-# Start everything (postgres + account + card + loan + gateway)
+# Start everything (postgres + account + card + loan + customergateway)
 docker compose up -d
 ```
 
@@ -90,7 +90,7 @@ cd deploy/dev && docker compose up -d postgres
 cd account && ./mvnw spring-boot:run
 cd card && ./mvnw spring-boot:run
 cd loan && ./mvnw spring-boot:run
-cd gateway && ./mvnw spring-boot:run
+cd customergateway && ./mvnw spring-boot:run
 ```
 
 ### Option 3: Kubernetes Deployment
@@ -117,11 +117,11 @@ GitHub Actions automatically:
 **Access the Gateway** (the only externally exposed service):
 ```bash
 # Find NodePort assignment
-kubectl get svc gateway -n eazybank-staging
+kubectl get svc customergateway -n eazybank-staging
 
 # Output example:
 # NAME      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
-# gateway   NodePort   10.43.x.x    <none>        8000:31234/TCP   5m
+# customergateway   NodePort   10.43.x.x    <none>        8000:31234/TCP   5m
 
 # Access Swagger UI
 # http://YOUR_CLUSTER_IP:31234/swagger-ui.html
@@ -136,7 +136,7 @@ For advanced Kubernetes configuration: [deploy/helm/README.md](deploy/helm/READM
 ### 1. Make Changes
 
 ```bash
-cd gateway  # or account, card, loan
+cd customergateway  # or account, card, loan
 # Edit code
 ./mvnw test  # Run tests
 ```
@@ -146,9 +146,9 @@ cd gateway  # or account, card, loan
 ```bash
 cd deploy/dev && docker compose up -d postgres
 
-# Run the service you're working on + gateway
+# Run the service you're working on + customergateway
 cd account && ./mvnw spring-boot:run
-cd gateway && ./mvnw spring-boot:run
+cd customergateway && ./mvnw spring-boot:run
 
 # Verify
 curl http://localhost:8000/api/customer/1234567890
@@ -272,7 +272,7 @@ cd account && ./mvnw test
 ```bash
 cd deploy/dev && docker compose up -d
 
-# Via gateway (port 8000)
+# Via customergateway (port 8000)
 curl -X POST http://localhost:8000/api/customer \
   -H "Content-Type: application/json" \
   -d '{"name": "John Doe", "email": "john@example.com", "mobileNumber": "1234567890"}'
@@ -285,10 +285,10 @@ curl http://localhost:8000/api/customer/1234567890
 The gateway is the only externally exposed service (NodePort):
 
 ```bash
-# Get gateway NodePort
-GATEWAY_PORT=$(kubectl get svc gateway -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
+# Get customergateway NodePort
+GATEWAY_PORT=$(kubectl get svc customergateway -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
 
-# All requests go through the gateway
+# All requests go through the customergateway
 curl http://<CLUSTER_IP>:$GATEWAY_PORT/api/customer/1234567890
 
 # Swagger UI
@@ -300,7 +300,7 @@ curl http://<CLUSTER_IP>:$GATEWAY_PORT/api/customer/1234567890
 Same pattern — gateway is the single entry point via NodePort:
 
 ```bash
-GATEWAY_PORT=$(kubectl get svc gateway -n eazybank-prod -o jsonpath='{.spec.ports[0].nodePort}')
+GATEWAY_PORT=$(kubectl get svc customergateway -n eazybank-prod -o jsonpath='{.spec.ports[0].nodePort}')
 curl http://<CLUSTER_IP>:$GATEWAY_PORT/api/customer/1234567890
 ```
 
@@ -320,7 +320,7 @@ kubectl top pods -n eazybank-staging
 kubectl get hpa -n eazybank-staging -w
 
 # Logs
-kubectl logs -f deployment/gateway -n eazybank-staging
+kubectl logs -f deployment/customergateway -n eazybank-staging
 kubectl logs -f deployment/account -n eazybank-staging
 ```
 
@@ -340,7 +340,7 @@ cd deploy/dev
 
 # Or individually
 cd account && ./mvnw jib:dockerBuild
-cd gateway && ./mvnw jib:dockerBuild
+cd customergateway && ./mvnw jib:dockerBuild
 ```
 
 ## Security
@@ -385,14 +385,14 @@ k8s:
 ### Access Logs
 
 ```bash
-kubectl logs -f deployment/gateway -n eazybank-staging
+kubectl logs -f deployment/customergateway -n eazybank-staging
 kubectl logs -f deployment/account -n eazybank-staging
 ```
 
 ### Rollback a Deployment
 
 ```bash
-helm rollback gateway 1 -n eazybank-staging
+helm rollback customergateway 1 -n eazybank-staging
 ```
 
 ## Documentation
@@ -420,7 +420,7 @@ helm rollback gateway 1 -n eazybank-staging
 - [account/README.md](account/README.md) — Account service (customer account management)
 - [card/README.md](card/README.md) — Card service (credit card management)
 - [loan/README.md](loan/README.md) — Loan service (loan management)
-- [gateway/README.md](gateway/README.md) — API Gateway (write gate pattern & circuit breaker architecture)
+- [gateway/README.md](gateway_backup/README.md) — API Gateway (write gate pattern & circuit breaker architecture)
 
 ## License
 

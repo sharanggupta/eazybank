@@ -3,8 +3,8 @@
 # =============================================================================
 #
 # Triggers when:
-#   - Changes pushed to gateway/** OR
-#   - Changes pushed to deploy/helm/services/gateway/**
+#   - Changes pushed to customergateway/** OR
+#   - Changes pushed to deploy/helm/services/customergateway/**
 #   - Manual trigger via workflow_dispatch
 #
 # Skips if only documentation/config changes
@@ -26,9 +26,9 @@ on:
     branches:
       - main
     paths:
-      - 'gateway/**'
-      - 'deploy/helm/services/gateway/**'
-      - '.github/workflows/deploy-gateway.yml'
+      - 'customergateway/**'
+      - 'deploy/helm/services/customergateway/**'
+      - '.github/workflows/deploy-customergateway.yml'
       - '.github/workflows/deploy-service.yml'
       - '.github/workflows/get-version.yml'
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy-service.yml
     with:
-      service: gateway
+      service: customergateway
       registry: ghcr.io
       image_prefix: ${{ github.repository_owner }}/eazybank
     secrets:

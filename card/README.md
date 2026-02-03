@@ -253,7 +253,7 @@ cd card
 When card service fails:
 
 ```bash
-# GET /api/customer/1234567890 on gateway with card service down
+# GET /api/customer/1234567890 on customergateway with card service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },

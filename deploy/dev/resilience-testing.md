@@ -351,8 +351,8 @@ curl http://localhost:8000/actuator/circuitbreakers/card-service
 ### Via Logs
 
 ```bash
-# Watch gateway logs for circuit breaker events
-docker compose logs -f gateway | grep -i "circuit\|rejecting"
+# Watch customergateway logs for circuit breaker events
+docker compose logs -f customergateway | grep -i "circuit\|rejecting"
 
 # Example output:
 # [WriteGateInterceptor] Rejecting POST /api/customer — circuit breaker 'card-service' is open
@@ -366,7 +366,7 @@ docker compose logs -f gateway | grep -i "circuit\|rejecting"
 The gateway includes comprehensive tests:
 
 ```bash
-cd gateway
+cd customergateway
 
 # All tests (including circuit breaker tests)
 ./mvnw test

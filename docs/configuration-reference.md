@@ -113,7 +113,7 @@ server:
 
 spring:
   application:
-    name: gateway                      # Service name
+    name: customergateway                      # Service name
   threads:
     virtual:
       enabled: true                    # Enable virtual threads (Java 21+)
@@ -148,7 +148,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,circuitbreakers
+        include: health,info,customergateway,circuitbreakers
   health:
     circuitbreakers:
       enabled: true

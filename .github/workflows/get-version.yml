@@ -7,7 +7,7 @@
 # 2. Commits since that tag
 # 3. Conventional commit message analysis
 #
-# Input: service name (account, card, loan, gateway)
+# Input: service name (account, card, loan, customergateway)
 # Output:
 #   - new_version: e.g., "0.1.2"
 #   - git_tag: e.g., "account-v0.1.2"
@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       service:
-        description: 'Service name (account|card|loan|gateway)'
+        description: 'Service name (account|card|loan|customergateway)'
         required: true
         type: string
     outputs:
