@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # This is a reusable workflow that builds and deploys a single microservice
-# Called by: deploy-account.yml, deploy-card.yml, deploy-loan.yml, deploy-customergateway.yml
+# Called by: deploy-account.yml, deploy-card.yml, deploy-loan.yml, deploy-gateway.yml
 #
 # Smart Versioning:
 #   - Calculates semantic version based on git tags + commit messages
@@ -29,7 +29,7 @@ on:
   workflow_call:
     inputs:
       service:
-        description: 'Service name (account|card|loan|customergateway)'
+        description: 'Service name (account|card|loan|customer-gateway)'
         required: true
         type: string
       registry:
