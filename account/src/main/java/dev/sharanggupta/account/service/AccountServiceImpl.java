@@ -32,7 +32,7 @@ public class AccountServiceImpl implements AccountService {
     public Mono<Void> createAccount(CustomerDto customerDto) {
         return validateCustomerDoesNotExist(customerDto.getMobileNumber())
                 .then(Mono.defer(() -> {
-                    Customer customer = CustomerMapper.mapToCustomer(customerDto, new Customer());
+                    Customer customer = CustomerMapper.mapToEntity(customerDto);
                     return customerRepository.save(customer);
                 }))
                 .flatMap(savedCustomer -> {
@@ -48,17 +48,13 @@ public class AccountServiceImpl implements AccountService {
                 .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)))
                 .flatMap(customer -> accountRepository.findByCustomerId(customer.getCustomerId())
                         .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Account", "customerId", customer.getCustomerId().toString())))
-                        .map(account -> {
-                            CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
-                            customerDto.setAccountDto(AccountMapper.mapToAccountDto(account, new AccountDto()));
-                            return customerDto;
-                        })
+                        .map(account -> CustomerMapper.mapToDto(customer, AccountMapper.mapToDto(account)))
                 );
     }
 
     @Override
     public Mono<Void> updateAccount(CustomerDto customerDto) {
-        AccountDto accountDto = Optional.ofNullable(customerDto.getAccountDto())
+        AccountDto accountDto = Optional.ofNullable(customerDto.getAccount())
                 .orElseThrow(() -> new AccountDetailsMissingException("Account details are required for update"));
 
         String accountNumber = Optional.ofNullable(accountDto.getAccountNumber())
@@ -69,8 +65,8 @@ public class AccountServiceImpl implements AccountService {
                 .flatMap(account -> customerRepository.findById(account.getCustomerId())
                         .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "customerId", account.getCustomerId().toString())))
                         .flatMap(customer -> {
-                            CustomerMapper.mapToCustomer(customerDto, customer);
-                            AccountMapper.mapToAccount(accountDto, account);
+                            CustomerMapper.updateEntity(customerDto, customer);
+                            AccountMapper.updateEntity(accountDto, account);
                             return customerRepository.save(customer)
                                     .then(accountRepository.save(account));
                         })

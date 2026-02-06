@@ -1,6 +1,7 @@
 package dev.sharanggupta.account.exception;
 
 import dev.sharanggupta.account.dto.ErrorResponseDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -23,9 +25,7 @@ public class GlobalExceptionHandler {
         Map<String, String> validationErrors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             if (error instanceof FieldError fieldError) {
-                String fieldName = fieldError.getField();
-                String validationMsg = error.getDefaultMessage();
-                validationErrors.put(fieldName, validationMsg);
+                validationErrors.put(fieldError.getField(), error.getDefaultMessage());
             }
         });
         return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationErrors));
@@ -33,32 +33,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomerAlreadyExistsException.class)
     public Mono<ResponseEntity<ErrorResponseDto>> handleCustomerAlreadyExistsException(
-            CustomerAlreadyExistsException exception, ServerWebExchange exchange) {
-        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, exception.getMessage());
+            CustomerAlreadyExistsException ex, ServerWebExchange exchange) {
+        log.warn("Customer already exists: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponseDto>> handleResourceNotFoundException(
-            ResourceNotFoundException exception, ServerWebExchange exchange) {
-        return buildErrorResponse(exchange, HttpStatus.NOT_FOUND, exception.getMessage());
+            ResourceNotFoundException ex, ServerWebExchange exchange) {
+        log.info("Resource not found: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(AccountDetailsMissingException.class)
     public Mono<ResponseEntity<ErrorResponseDto>> handleAccountDetailsMissingException(
-            AccountDetailsMissingException exception, ServerWebExchange exchange) {
-        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, exception.getMessage());
+            AccountDetailsMissingException ex, ServerWebExchange exchange) {
+        log.warn("Account details missing: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponseDto>> handleGlobalException(
-            Exception exception, ServerWebExchange exchange) {
-        return buildErrorResponse(exchange, HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+            Exception ex, ServerWebExchange exchange) {
+        log.error("Unexpected error for request {}: {}", exchange.getRequest().getURI(), ex.getMessage(), ex);
+        return buildErrorResponse(exchange, HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.");
     }
 
     private Mono<ResponseEntity<ErrorResponseDto>> buildErrorResponse(
             ServerWebExchange exchange, HttpStatus status, String message) {
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                exchange.getRequest().getPath().value(),
+                exchange.getRequest().getURI().toString(),
                 status,
                 message,
                 LocalDateTime.now()
