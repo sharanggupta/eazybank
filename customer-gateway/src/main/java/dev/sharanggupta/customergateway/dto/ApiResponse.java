@@ -1,7 +1,6 @@
 package dev.sharanggupta.customergateway.dto;
 
-public record ResponseDto(
+public record ApiResponse(
         String statusCode,
         String statusMessage
-
 ) {}
