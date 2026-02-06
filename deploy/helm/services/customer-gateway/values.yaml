@@ -1,10 +1,10 @@
 service:
-  name: customergateway
+  name: customer-gateway
   port: 8000
   contextPath: ""
 
 image:
-  repository: ghcr.io/sharanggupta/eazybank/customergateway
+  repository: ghcr.io/sharanggupta/eazybank/customer-gateway
   tag: latest
 
 app:
