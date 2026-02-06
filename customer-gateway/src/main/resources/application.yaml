@@ -1,12 +1,72 @@
 spring:
   application:
-    name: customer-customergateway
+    name: customer-gateway
 server:
   port: 8000
+services:
+  account-url: ${SERVICES_ACCOUNT_URL:http://localhost:8080}
+  card-url: ${SERVICES_CARD_URL:http://localhost:9000}
+  loan-url: ${SERVICES_LOAN_URL:http://localhost:8090}
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 2
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+    instances:
+      account_service:
+        base-config: default
+      card_service:
+        base-config: default
+      loan_service:
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
+    instances:
+      account_service:
+        base-config: default
+      card_service:
+        base-config: default
+      loan_service:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
+    instances:
+      account_service:
+        base-config: default
+      card_service:
+        base-config: default
+      loan_service:
+        base-config: default
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,customergateway
+        include: health,info,gateway,circuitbreakers,circuitbreakerevents
+  health:
+    circuitbreakers:
+      enabled: true
 
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    io.github.resilience4j: DEBUG
