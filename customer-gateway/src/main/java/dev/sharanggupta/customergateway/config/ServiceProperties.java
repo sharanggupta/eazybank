@@ -1,4 +1,10 @@
 package dev.sharanggupta.customergateway.config;
 
-public record ServiceProperties() {
-}
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "services")
+public record ServiceProperties(
+        String accountUrl,
+        String cardUrl,
+        String loanUrl
+) {}
