@@ -67,7 +67,7 @@ cd card && ./mvnw spring-boot:run
 cd loan && ./mvnw spring-boot:run
 
 # Gateway (port 8000)
-cd customergateway && ./mvnw spring-boot:run
+cd customer-gateway && ./mvnw spring-boot:run
 ```
 
 Services connect via `application.yaml` configuration.
