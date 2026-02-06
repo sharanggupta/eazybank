@@ -59,42 +59,15 @@ services:
         condition: service_healthy
 
   gateway:
-    image: eazybank/gateway
+    image: eazybank/customer-gateway
     container_name: eazybank-customergateway
     ports:
       - "8000:8000"
     environment:
-      # Downstream service URLs
+      SPRING_PROFILES_ACTIVE: dev
       SERVICES_ACCOUNT_URL: http://account:8080
       SERVICES_CARD_URL: http://card:9000
       SERVICES_LOAN_URL: http://loan:8090
-
-      # Circuit Breaker Configuration for Dev/Testing
-      # Default prod config: slidingWindowSize=100, minimumNumberOfCalls=10, failureRateThreshold=50%, waitDuration=60s
-      # Dev config: Much lower thresholds for faster feedback during testing and manual failure injection
-
-      # Account Service Circuit Breaker
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_SLIDINGWINDOWSIZE: "2"
-      # Reduce from 100 to 2: Evaluate on small sample for quick feedback
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_MINIMUMNUMBEROFCALLS: "1"
-      # Reduce from 10 to 1: Trip immediately after first failure for testing
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_FAILURERATHRESHOLD: "100"
-      # Set to 100%: Any failure triggers circuit break (deterministic behavior for dev)
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_WAITDURATIONINOPENSTATE: "5s"
-      # Reduce from 60s to 5s: Faster recovery cycles during manual testing
-
-      # Card Service Circuit Breaker
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_CARD_SERVICE_SLIDINGWINDOWSIZE: "2"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_CARD_SERVICE_MINIMUMNUMBEROFCALLS: "1"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_CARD_SERVICE_FAILURERATHRESHOLD: "100"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_CARD_SERVICE_WAITDURATIONINOPENSTATE: "5s"
-
-      # Loan Service Circuit Breaker
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_LOAN_SERVICE_SLIDINGWINDOWSIZE: "2"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_LOAN_SERVICE_MINIMUMNUMBEROFCALLS: "1"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_LOAN_SERVICE_FAILURERATHRESHOLD: "100"
-      RESILIENCE4J_CIRCUITBREAKER_INSTANCES_LOAN_SERVICE_WAITDURATIONINOPENSTATE: "5s"
-
     depends_on:
       - account
       - card
