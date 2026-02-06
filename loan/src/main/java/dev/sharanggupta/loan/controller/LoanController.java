@@ -16,14 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Tag(name = "Loan REST APIs", description = "REST APIs to CREATE, UPDATE, FETCH and DELETE loan details")
@@ -53,9 +46,9 @@ public class LoanController {
     @ApiResponse(responseCode = "200", description = "Loan fetched successfully")
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
-    @GetMapping
+    @GetMapping("/{mobileNumber}")
     public Mono<ResponseEntity<LoanDto>> fetchLoan(
-            @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
         return loanService.fetchLoan(mobileNumber)
                 .map(ResponseEntity::ok);
@@ -75,9 +68,9 @@ public class LoanController {
     @ApiResponse(responseCode = "204", description = "Loan deleted successfully")
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
-    @DeleteMapping
+    @DeleteMapping("/{mobileNumber}")
     public Mono<ResponseEntity<Void>> deleteLoan(
-            @RequestParam @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
             String mobileNumber) {
         return loanService.deleteLoan(mobileNumber)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));

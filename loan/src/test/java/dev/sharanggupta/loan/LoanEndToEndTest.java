@@ -53,7 +53,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
         createLoan(loanRequest);
 
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(LoanDto.class)
@@ -100,12 +100,12 @@ class LoanEndToEndTest extends BaseEndToEndTest {
         createLoan(loanRequest);
 
         client.delete()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNoContent();
 
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -128,7 +128,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     @DisplayName("Should return not found for non-existent loan")
     void shouldReturnNotFoundForNonExistentLoan() {
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=9999999999")
+                .uri(LOAN_API_PATH + "/9999999999")
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -148,7 +148,7 @@ class LoanEndToEndTest extends BaseEndToEndTest {
 
     private LoanDto fetchLoan(String mobileNumber) {
         return client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + mobileNumber)
+                .uri(LOAN_API_PATH + "/" + mobileNumber)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(LoanDto.class)
