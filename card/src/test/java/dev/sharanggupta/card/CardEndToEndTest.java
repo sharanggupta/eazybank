@@ -53,7 +53,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
         createCard(cardRequest);
 
         client.get()
-                .uri(CARD_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CardDto.class)
@@ -102,12 +102,12 @@ class CardEndToEndTest extends BaseEndToEndTest {
         createCard(cardRequest);
 
         client.delete()
-                .uri(CARD_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNoContent();
 
         client.get()
-                .uri(CARD_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -130,7 +130,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @DisplayName("Should return not found for non-existent card")
     void shouldReturnNotFoundForNonExistentCard() {
         client.get()
-                .uri(CARD_API_PATH + "?mobileNumber=9999999999")
+                .uri(CARD_API_PATH + "/9999999999")
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -150,7 +150,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
 
     private CardDto fetchCard(String mobileNumber) {
         return client.get()
-                .uri(CARD_API_PATH + "?mobileNumber=" + mobileNumber)
+                .uri(CARD_API_PATH + "/" + mobileNumber)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CardDto.class)
