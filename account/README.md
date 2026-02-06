@@ -17,7 +17,7 @@ This is a **critical service** — all other operations depend on it. No gracefu
 ### Create Account
 
 ```http
-POST /account/api/create
+POST /account/api
 Content-Type: application/json
 
 {
@@ -30,58 +30,74 @@ Content-Type: application/json
 **Response (201 Created)**:
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "accountNumber": 1234567890,
-  "accountType": "Savings",
-  "branchAddress": "123 Main Street"
+  "statusCode": "201",
+  "statusMessage": "Account created successfully"
 }
 ```
 
 ### Fetch Account
 
 ```http
-GET /account/api/fetch?mobileNumber=1234567890
+GET /account/api/{mobileNumber}
 ```
+
+Example: `GET /account/api/1234567890`
 
 **Response (200 OK)**:
 ```json
 {
   "name": "John Doe",
   "email": "john@example.com",
-  "accountNumber": 1234567890,
-  "accountType": "Savings",
-  "branchAddress": "123 Main Street"
+  "mobileNumber": "1234567890",
+  "account": {
+    "accountNumber": "00010012345678901",
+    "accountType": "Savings",
+    "branchAddress": "123 Main Street, New York"
+  }
 }
 ```
 
 ### Update Account
 
 ```http
-PUT /account/api/update
+PUT /account/api
 Content-Type: application/json
 
 {
   "name": "John Updated",
   "email": "john.updated@example.com",
   "mobileNumber": "1234567890",
-  "accountDto": {
-    "accountNumber": 1234567890,
+  "account": {
+    "accountNumber": "00010012345678901",
     "accountType": "Checking",
     "branchAddress": "456 New Street"
   }
 }
 ```
 
-**Response (204 No Content)**
+**Response (200 OK)**:
+```json
+{
+  "statusCode": "200",
+  "statusMessage": "Account updated successfully"
+}
+```
 
 ### Delete Account
 
 ```http
-DELETE /account/api/delete?mobileNumber=1234567890
+DELETE /account/api/{mobileNumber}
 ```
 
-**Response (204 No Content)**
+Example: `DELETE /account/api/1234567890`
+
+**Response (200 OK)**:
+```json
+{
+  "statusCode": "200",
+  "statusMessage": "Account deleted successfully"
+}
+```
 
 ---
 
@@ -214,20 +230,20 @@ curl http://localhost:8080/account/actuator/health
 
 ```bash
 # Create account
-curl -X POST http://localhost:8080/account/api/create \
+curl -X POST http://localhost:8080/account/api \
   -H "Content-Type: application/json" \
   -d '{"name": "Test", "email": "test@example.com", "mobileNumber": "1234567890"}'
 
 # Fetch account
-curl http://localhost:8080/account/api/fetch?mobileNumber=1234567890
+curl http://localhost:8080/account/api/1234567890
 
 # Update account
-curl -X PUT http://localhost:8080/account/api/update \
+curl -X PUT http://localhost:8080/account/api \
   -H "Content-Type: application/json" \
-  -d '{"name": "Test Updated", "email": "test@example.com", "mobileNumber": "1234567890", "accountDto": {"accountNumber": 12345, "accountType": "Savings", "branchAddress": "Main St"}}'
+  -d '{"name": "Test Updated", "email": "test@example.com", "mobileNumber": "1234567890", "account": {"accountNumber": "00010012345678901", "accountType": "Savings", "branchAddress": "Main St"}}'
 
 # Delete account
-curl -X DELETE http://localhost:8080/account/api/delete?mobileNumber=1234567890
+curl -X DELETE http://localhost:8080/account/api/1234567890
 ```
 
 ### Run Unit Tests

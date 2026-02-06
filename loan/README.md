@@ -46,13 +46,15 @@ Content-Type: application/json
 ### Fetch Loan
 
 ```http
-GET /loan/api?mobileNumber=1234567890
+GET /loan/api/{mobileNumber}
 ```
+
+Example: `GET /loan/api/1234567890`
 
 **Response (200 OK)**:
 ```json
 {
-  "loanNumber": "LN-001-234567",
+  "loanNumber": "123456789012",
   "loanType": "Home Loan",
   "totalLoan": 500000,
   "amountPaid": 50000,
@@ -70,21 +72,36 @@ Content-Type: application/json
 
 {
   "mobileNumber": "1234567890",
+  "loanNumber": "123456789012",
   "loanType": "Home Loan",
   "totalLoan": 500000,
   "amountPaid": 100000
 }
 ```
 
-**Response (204 No Content)**
+**Response (200 OK)**:
+```json
+{
+  "statusCode": "200",
+  "statusMessage": "Loan updated successfully"
+}
+```
 
 ### Delete Loan
 
 ```http
-DELETE /loan/api?mobileNumber=1234567890
+DELETE /loan/api/{mobileNumber}
 ```
 
-**Response (204 No Content)**
+Example: `DELETE /loan/api/1234567890`
+
+**Response (200 OK)**:
+```json
+{
+  "statusCode": "200",
+  "statusMessage": "Loan deleted successfully"
+}
+```
 
 ---
 
@@ -227,15 +244,15 @@ curl -X POST http://localhost:8090/loan/api \
   -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000}'
 
 # Fetch loan
-curl http://localhost:8090/loan/api?mobileNumber=1234567890
+curl http://localhost:8090/loan/api/1234567890
 
 # Update loan (payment progress)
 curl -X PUT http://localhost:8090/loan/api \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+  -d '{"mobileNumber": "1234567890", "loanNumber": "123456789012", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
 
 # Delete loan
-curl -X DELETE http://localhost:8090/loan/api?mobileNumber=1234567890
+curl -X DELETE http://localhost:8090/loan/api/1234567890
 ```
 
 ### Run Unit Tests
@@ -252,7 +269,7 @@ cd loan
 When loan service fails:
 
 ```bash
-# GET /api/customer/1234567890 on customergateway with loan service down
+# GET /api/customer/details?mobileNumber=1234567890 on customer-gateway with loan service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },
