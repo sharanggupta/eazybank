@@ -85,7 +85,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.97.0
     container_name: eazybank-otel-collector
-    command: ["otelcontribcol", "--config=/etc/otel-collector-config.yaml"]
+    command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4318:4318"  # OTLP HTTP receiver
       - "8889:8889"  # Prometheus metrics export
@@ -124,6 +124,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards/eazybank
     depends_on:
       - prometheus
       - loki

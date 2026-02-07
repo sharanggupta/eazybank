@@ -9,6 +9,7 @@ ingester:
     ring:
       kvstore:
         store: inmemory
+      replication_factor: 1
 
 limits_config:
   enforce_metric_name: false
@@ -40,3 +41,11 @@ compactor:
   working_directory: /loki/compactor
   compaction_interval: 10m
   shared_store: filesystem
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+querier:
+  max_concurrent: 20
