@@ -58,3 +58,17 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Alias for consistency - observability-chart.fullname
+*/}}
+{{- define "observability-chart.fullname" -}}
+{{- include "observability-fullname" . }}
+{{- end }}
+
+{{/*
+Alias for consistency - observability-chart.labels
+*/}}
+{{- define "observability-chart.labels" -}}
+{{- include "observability-labels" . }}
+{{- end }}

@@ -169,6 +169,8 @@ alloy:
     type: ClusterIP
     port: 12345
     nodePort: null
+    ui:
+      port: 12345
 
   # Discovery configuration
   discovery:
@@ -252,6 +254,13 @@ networkPolicy:
   enabled: false  # Enable in production for security
   ingress: []
   egress: []
+
+# ============================================================================
+# Service Account Configuration
+# ============================================================================
+serviceAccount:
+  create: true
+  name: observability
 
 # ============================================================================
 # RBAC Configuration
