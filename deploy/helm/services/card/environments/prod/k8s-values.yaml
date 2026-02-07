@@ -38,6 +38,16 @@ k8s:
       initialDelaySeconds: 90
       periodSeconds: 5
 
+# Observability configuration for production
+observability:
+  metrics:
+    enabled: true
+  tracing:
+    enabled: true
+    samplingRate: 0.1  # 10% sampling in production to reduce overhead
+  logging:
+    enabled: true
+
 postgresql:
   storage: 20Gi
   resources:

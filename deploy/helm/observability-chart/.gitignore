@@ -1,0 +1,3 @@
+# Helm dependencies - auto-generated
+charts/
+Chart.lock

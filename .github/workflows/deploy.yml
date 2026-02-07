@@ -167,6 +167,15 @@ jobs:
 
       - name: Deploy observability stack to staging
         run: |
+          # Add Helm chart repositories
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+          # Update observability chart dependencies
+          helm dependency update ./deploy/helm/observability-chart
+
+          # Deploy observability stack
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace observability \
             --wait --timeout 10m \
@@ -311,6 +320,15 @@ jobs:
 
       - name: Deploy observability stack to production
         run: |
+          # Add Helm chart repositories
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+          # Update observability chart dependencies
+          helm dependency update ./deploy/helm/observability-chart
+
+          # Deploy observability stack
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace observability \
             --wait --timeout 10m \

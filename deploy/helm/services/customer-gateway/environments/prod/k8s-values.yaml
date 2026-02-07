@@ -22,3 +22,13 @@ k8s:
 
   service:
     type: LoadBalancer
+
+# Observability configuration for production
+observability:
+  metrics:
+    enabled: true
+  tracing:
+    enabled: true
+    samplingRate: 0.1  # 10% sampling in production to reduce overhead
+  logging:
+    enabled: true
