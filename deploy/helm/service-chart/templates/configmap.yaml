@@ -21,6 +21,10 @@ data:
   {{- if .Values.app.support.message }}
   APP_SUPPORT_MESSAGE: {{ .Values.app.support.message | quote }}
   {{- end }}
+  {{- if .Values.observability.tracing.enabled }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318"
+  MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+  {{- end }}
   {{- range $key, $value := .Values.app.env }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
