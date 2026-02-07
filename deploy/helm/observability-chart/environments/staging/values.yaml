@@ -1,0 +1,86 @@
+# EazyBank Observability Stack - Staging Environment
+# This file ONLY overrides staging-specific values from the base values.yaml
+# For production, use prod/values.yaml instead
+
+global:
+  environment: staging
+
+# Prometheus configuration for staging
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    retention: 7d
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 20Gi
+
+# Grafana configuration for staging
+grafana:
+  replicas: 1
+  adminPassword: admin  # Change this!
+
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# Loki configuration for staging
+loki:
+  loki:
+    replicas: 1
+    persistence:
+      enabled: true
+      size: 20Gi
+
+# OpenTelemetry Collector for staging
+otelCollector:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Alloy configuration for staging
+alloy:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Ingress configuration for staging (optional)
+ingress:
+  enabled: false
+  # Uncomment below to enable ingress for staging
+  # className: nginx
+  # annotations:
+  #   cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  # hosts:
+  #   - host: prometheus-staging.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+  #   - host: grafana-staging.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+  #   - host: loki-staging.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix

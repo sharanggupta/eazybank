@@ -1,0 +1,154 @@
+{{- if .Values.alloy.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "alloy-name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: alloy
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: alloy
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: alloy
+        release: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "observability-sa-name" . }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: alloy
+        image: "{{ .Values.alloy.image.repository }}:{{ .Values.alloy.image.tag }}"
+        imagePullPolicy: {{ .Values.alloy.image.pullPolicy }}
+        args:
+        - run
+        - /etc/alloy/config.alloy
+        - --server.http.listen-addr=0.0.0.0:{{ .Values.alloy.service.ui.port }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.alloy.service.ui.port }}
+          protocol: TCP
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: {{ .Values.alloy.resources.requests.cpu }}
+            memory: {{ .Values.alloy.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.alloy.resources.limits.cpu }}
+            memory: {{ .Values.alloy.resources.limits.memory }}
+        volumeMounts:
+        - name: alloy-config
+          mountPath: /etc/alloy
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        securityContext:
+          privileged: true
+      volumes:
+      - name: alloy-config
+        configMap:
+          name: {{ include "alloy-config-name" . }}
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alloy-name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: alloy
+    release: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: http
+    port: {{ .Values.alloy.service.ui.port }}
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: alloy
+    release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alloy-config-name" . }}
+  namespace: {{ .Release.Namespace }}
+data:
+  config.alloy: |
+    // Discover Docker containers
+    discovery.docker "containers" {
+      host = "unix:///var/run/docker.sock"
+    }
+
+    // Scrape logs from containers
+    loki.source.docker "default" {
+      host       = "unix:///var/run/docker.sock"
+      targets    = discovery.docker.containers.targets
+      forward_to = [loki.process.parse_json.receiver]
+    }
+
+    // Parse JSON logs and extract fields
+    loki.process "parse_json" {
+      forward_to = [loki.write.local.receiver]
+
+      stage.json {
+        expressions = {
+          level     = "level",
+          service   = "service",
+          trace_id  = "traceId",
+          span_id   = "spanId",
+          timestamp = "timestamp",
+          message   = "message",
+        }
+      }
+
+      stage.labels {
+        values = {
+          level    = "",
+          service  = "",
+          trace_id = "",
+          span_id  = "",
+        }
+      }
+
+      stage.timestamp {
+        source = "timestamp"
+        format = "RFC3339"
+      }
+
+      stage.output {
+        source = "message"
+      }
+    }
+
+    // Write to Loki
+    loki.write "local" {
+      endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+      }
+    }
+{{- end }}
+
+{{- define "alloy-name" -}}
+{{ include "observability-name" . }}-alloy
+{{- end }}
+
+{{- define "alloy-config-name" -}}
+{{ include "observability-name" . }}-alloy-config
+{{- end }}

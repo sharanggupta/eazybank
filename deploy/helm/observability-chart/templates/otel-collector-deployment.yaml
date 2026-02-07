@@ -1,0 +1,115 @@
+{{- if .Values.otelCollector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "otel-collector-name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: otel-collector
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.otelCollector.replicas }}
+  selector:
+    matchLabels:
+      app: otel-collector
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        release: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "observability-sa-name" . }}
+      containers:
+      - name: otel-collector
+        image: "{{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}"
+        imagePullPolicy: {{ .Values.otelCollector.image.pullPolicy }}
+        ports:
+        - name: otlp-http
+          containerPort: {{ .Values.otelCollector.service.otlpHttp.port }}
+          protocol: TCP
+        - name: metrics
+          containerPort: {{ .Values.otelCollector.service.prometheusMetrics.port }}
+          protocol: TCP
+        env:
+        - name: GOGC
+          value: "80"
+        resources:
+          requests:
+            cpu: {{ .Values.otelCollector.resources.requests.cpu }}
+            memory: {{ .Values.otelCollector.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.otelCollector.resources.limits.cpu }}
+            memory: {{ .Values.otelCollector.resources.limits.memory }}
+        volumeMounts:
+        - name: otel-config
+          mountPath: /etc/otel
+      volumes:
+      - name: otel-config
+        configMap:
+          name: {{ include "otel-config-name" . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "otel-collector-name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: otel-collector
+    release: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: otlp-http
+    port: {{ .Values.otelCollector.service.otlpHttp.port }}
+    targetPort: otlp-http
+    protocol: TCP
+  - name: metrics
+    port: {{ .Values.otelCollector.service.prometheusMetrics.port }}
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app: otel-collector
+    release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "otel-config-name" . }}
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:{{ .Values.otelCollector.service.otlpHttp.port }}
+
+    processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:{{ .Values.otelCollector.service.prometheusMetrics.port }}"
+        namespace: eazybank
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]
+{{- end }}
+
+{{- define "otel-collector-name" -}}
+{{ include "observability-name" . }}-otel-collector
+{{- end }}
+
+{{- define "otel-config-name" -}}
+{{ include "observability-name" . }}-otel-config
+{{- end }}

@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'eazybank-local'
+    environment: 'dev'
+
+scrape_configs:
+  # Account Service
+  - job_name: 'account'
+    metrics_path: '/account/actuator/prometheus'
+    static_configs:
+      - targets: ['account:8080']
+        labels:
+          service: 'account'
+
+  # Card Service
+  - job_name: 'card'
+    metrics_path: '/card/actuator/prometheus'
+    static_configs:
+      - targets: ['card:9000']
+        labels:
+          service: 'card'
+
+  # Loan Service
+  - job_name: 'loan'
+    metrics_path: '/loan/actuator/prometheus'
+    static_configs:
+      - targets: ['loan:8090']
+        labels:
+          service: 'loan'
+
+  # Customer Gateway
+  - job_name: 'customer-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:8000']
+        labels:
+          service: 'customer-gateway'
+
+  # OTel Collector
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

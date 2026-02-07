@@ -1,0 +1,99 @@
+# EazyBank Observability Stack - Production Environment
+# This file ONLY overrides production-specific values from the base values.yaml
+
+global:
+  environment: prod
+
+# Prometheus configuration for production
+prometheus:
+  prometheusSpec:
+    replicas: 2
+    retention: 30d
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: fast  # Use faster storage class if available
+          resources:
+            requests:
+              storage: 100Gi
+
+# Grafana configuration for production
+grafana:
+  replicas: 2
+  adminPassword: CHANGE_ME  # Must be changed!
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: fast
+
+# Loki configuration for production
+loki:
+  loki:
+    replicas: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClassName: fast
+
+# OpenTelemetry Collector for production
+otelCollector:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Alloy configuration for production
+alloy:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Ingress configuration for production (required)
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: observability-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'EazyBank Observability'
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+  hosts:
+    - host: prometheus.eazybank.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: grafana.eazybank.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: loki.eazybank.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+  tls:
+    - secretName: observability-tls-prod
+      hosts:
+        - prometheus.eazybank.com
+        - grafana.eazybank.com
+        - loki.eazybank.com

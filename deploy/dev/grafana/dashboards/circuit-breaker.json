@@ -1,0 +1,89 @@
+{
+  "dashboard": {
+    "title": "EazyBank - Circuit Breakers",
+    "uid": "eazybank-circuitbreaker",
+    "tags": ["eazybank", "resilience4j"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Circuit Breaker State",
+        "targets": [
+          {
+            "expr": "resilience4j_circuitbreaker_state{application=\"customer-gateway\"}",
+            "legendFormat": "{{name}} - {{state}}"
+          }
+        ],
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "orientation": "auto",
+          "textMode": "auto",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 2}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "CLOSED"},
+            {"type": "value", "value": "1", "text": "OPEN"},
+            {"type": "value", "value": "2", "text": "HALF_OPEN"}
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "Failure Rate (%)",
+        "targets": [
+          {
+            "expr": "resilience4j_circuitbreaker_failure_rate{application=\"customer-gateway\"}",
+            "legendFormat": "{{name}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Buffered Calls",
+        "targets": [
+          {
+            "expr": "resilience4j_circuitbreaker_buffered_calls{application=\"customer-gateway\"}",
+            "legendFormat": "{{name}} - {{kind}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Not Permitted Calls (Rate)",
+        "targets": [
+          {
+            "expr": "rate(resilience4j_circuitbreaker_not_permitted_calls_total{application=\"customer-gateway\"}[1m])",
+            "legendFormat": "{{name}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Successful Calls",
+        "targets": [
+          {
+            "expr": "rate(resilience4j_circuitbreaker_calls_total{application=\"customer-gateway\",outcome=\"success\"}[1m])",
+            "legendFormat": "{{name}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      }
+    ]
+  }
+}

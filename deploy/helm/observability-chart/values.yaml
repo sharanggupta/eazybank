@@ -1,0 +1,283 @@
+# ============================================================================
+# EazyBank Observability Stack Helm Chart Values
+# ============================================================================
+# This chart deploys the complete observability infrastructure:
+# - Prometheus (metrics storage)
+# - Grafana (visualization & dashboards)
+# - Loki (log aggregation)
+# - Grafana Alloy (log collection agent)
+# - OpenTelemetry Collector (trace collection & metrics export)
+
+# Global settings
+global:
+  environment: staging  # Override to 'prod' for production
+  namespace: observability
+
+# ============================================================================
+# Prometheus Configuration
+# ============================================================================
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v2.52.0
+    pullPolicy: IfNotPresent
+
+  # Prometheus pod configuration
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Storage configuration
+  storage:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+    retention: 15d  # Retain metrics for 15 days
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 9090
+    nodePort: null
+
+  # Configuration for metric collection
+  config:
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+    evaluationInterval: 30s
+
+  # Service monitors for Prometheus Operator (if installed)
+  servicemonitor:
+    enabled: true
+    interval: 30s
+
+# ============================================================================
+# Grafana Configuration
+# ============================================================================
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: "11.0.0"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Admin credentials (should be set via secrets in production)
+  adminUser: admin
+  adminPasswordSecret:
+    name: grafana-admin-secret
+    key: password
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+    nodePort: null
+
+  # Grafana plugins
+  plugins:
+    - grafana-piechart-panel
+    - grafana-worldmap-panel
+
+  # Dashboard provisioning
+  dashboards:
+    enabled: true
+    folder: /var/lib/grafana/dashboards
+
+  # Datasources (Prometheus, Loki)
+  datasources:
+    enabled: true
+
+  # Enable persistent data
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: standard
+
+# ============================================================================
+# Grafana Loki Configuration
+# ============================================================================
+loki:
+  enabled: true
+  image:
+    repository: grafana/loki
+    tag: "3.0.0"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3100
+    nodePort: null
+
+  # Storage configuration
+  storage:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+
+  # Log retention
+  config:
+    retention: 7d  # 7 days log retention
+    chunkSize: 256MB
+
+# ============================================================================
+# Grafana Alloy Configuration (Log Collection)
+# ============================================================================
+alloy:
+  enabled: true
+  image:
+    repository: grafana/alloy
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Alloy is a DaemonSet to collect logs from all pods
+  replicas: 1  # Will be overridden to DaemonSet
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+
+  # Service configuration (for UI)
+  service:
+    type: ClusterIP
+    port: 12345
+    nodePort: null
+
+  # Discovery configuration
+  discovery:
+    kubernetes:
+      enabled: true
+      namespaces:
+        - eazybank-staging
+        - eazybank-prod
+
+# ============================================================================
+# OpenTelemetry Collector Configuration
+# ============================================================================
+otelCollector:
+  enabled: true
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.97.0"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Services configuration
+  service:
+    # OTLP HTTP receiver
+    otlpHttp:
+      port: 4318
+    # Metrics endpoint for Prometheus scraping
+    prometheusMetrics:
+      port: 8889
+
+  # Configuration
+  config:
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch:
+        timeout: 10s
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: eazybank
+
+# ============================================================================
+# Ingress Configuration (for external access)
+# ============================================================================
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+
+  hosts:
+    prometheus:
+      host: prometheus.example.com
+      path: /
+    grafana:
+      host: grafana.example.com
+      path: /
+    loki:
+      host: loki.example.com
+      path: /
+
+  tls: []
+
+# ============================================================================
+# Network Policies (for production)
+# ============================================================================
+networkPolicy:
+  enabled: false  # Enable in production for security
+  ingress: []
+  egress: []
+
+# ============================================================================
+# RBAC Configuration
+# ============================================================================
+rbac:
+  create: true
+  serviceAccountName: observability
+
+# ============================================================================
+# Pod Security Policy
+# ============================================================================
+podSecurityPolicy:
+  enabled: false
+
+# ============================================================================
+# Node Selector (to run on specific nodes)
+# ============================================================================
+nodeSelector: {}
+  # workload: observability
+
+# ============================================================================
+# Tolerations (for node taints)
+# ============================================================================
+tolerations: []
+
+# ============================================================================
+# Affinity (pod scheduling preferences)
+# ============================================================================
+affinity: {}

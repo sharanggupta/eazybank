@@ -1,0 +1,22 @@
+apiVersion: v2
+name: eazybank-observability
+description: Observability stack (Prometheus, Grafana, Loki, Alloy, OTel Collector) for EazyBank
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+keywords:
+  - observability
+  - prometheus
+  - grafana
+  - loki
+  - opentelemetry
+  - microservices
+
+home: https://github.com/sharanggupta/eazybank
+sources:
+  - https://github.com/sharanggupta/eazybank
+
+maintainers:
+  - name: Sharang Gupta
+    email: sharang@eazybank.local

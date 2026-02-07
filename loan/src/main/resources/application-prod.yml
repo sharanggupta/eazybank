@@ -1,0 +1,9 @@
+management:
+  tracing:
+    sampling:
+      probability: 0.1  # 10% sampling in production
+
+logging:
+  level:
+    root: INFO
+    dev.sharanggupta: INFO

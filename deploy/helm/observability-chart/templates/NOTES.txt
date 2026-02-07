@@ -1,0 +1,79 @@
+====================================================================
+  EazyBank Observability Stack Deployed Successfully
+====================================================================
+
+1. Prometheus Metrics
+   - Access: kubectl port-forward -n observability svc/prometheus 9090:9090
+   - URL: http://localhost:9090
+   - Targets: All services should be in "UP" state
+
+2. Grafana Dashboards
+   - Access: kubectl port-forward -n observability svc/grafana 3000:3000
+   - URL: http://localhost:3000
+   - Username: admin
+   - Password: (from grafana-admin-secret)
+   - Dashboards:
+     • Application Overview
+     • HTTP Metrics
+     • JVM Metrics
+     • Circuit Breakers
+
+3. Grafana Loki (Logs)
+   - Access: kubectl port-forward -n observability svc/loki 3100:3100
+   - Query Logs in Grafana using Loki datasource
+   - Example query: {service="account"}
+
+4. OpenTelemetry Collector
+   - OTLP Endpoint: otel-collector:4318 (internal)
+   - Metrics Port: 8889 (scraped by Prometheus)
+   - Status: http://otel-collector:13133
+
+5. Grafana Alloy (Log Collection)
+   - Runs as DaemonSet across all nodes
+   - Discovers pod logs via Docker socket
+   - Forwards logs to Loki
+   - UI: kubectl port-forward -n observability ds/alloy 12345:12345
+
+====================================================================
+Service Mesh Integration
+====================================================================
+
+All services are automatically scraped by Prometheus. Ensure your
+services are configured to expose metrics at:
+  http://{service}:{port}/{contextPath}/actuator/prometheus
+
+Example for Account service:
+  http://account:8080/account/actuator/prometheus
+
+====================================================================
+Production Considerations
+====================================================================
+
+☐ Update Grafana admin password in secret
+☐ Enable Ingress for external access
+☐ Configure persistent storage classes
+☐ Set up backup policies for Prometheus/Loki data
+☐ Enable network policies for security
+☐ Configure resource quotas per namespace
+☐ Set up alerts in Prometheus
+☐ Enable RBAC and pod security policies
+
+====================================================================
+Troubleshooting
+====================================================================
+
+Check pod status:
+  kubectl get pods -n observability
+
+View logs:
+  kubectl logs -f -n observability <pod-name>
+
+Verify Prometheus targets:
+  kubectl exec -it -n observability prometheus-0 -- \
+    curl localhost:9090/api/v1/targets
+
+Verify Loki is receiving logs:
+  kubectl exec -it -n observability loki-0 -- \
+    curl localhost:3100/loki/api/v1/label/service/values
+
+====================================================================

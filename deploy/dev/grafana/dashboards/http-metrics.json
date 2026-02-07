@@ -1,0 +1,69 @@
+{
+  "dashboard": {
+    "title": "EazyBank - HTTP Metrics",
+    "uid": "eazybank-http",
+    "tags": ["eazybank", "http"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{application=~\"$service\"}[1m])",
+            "legendFormat": "{{application}} - {{method}} {{uri}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Response Time (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application=~\"$service\"}[1m]))",
+            "legendFormat": "{{application}} - {{uri}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (5xx)",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{application=~\"$service\",status=~\"5..\"}[1m])",
+            "legendFormat": "{{application}} - {{uri}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Status Code Distribution",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{application=~\"$service\"}[5m])) by (status)",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(http_server_requests_seconds_count, application)",
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    }
+  }
+}
