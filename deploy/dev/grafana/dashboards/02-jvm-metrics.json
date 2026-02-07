@@ -67,7 +67,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "expr": "jvm_memory_usage{service=\"account\", area=\"heap\"}",
+          "expr": "(jvm_memory_used_bytes{area=\"heap\", instance=~\"account.*\"} / jvm_memory_max_bytes{area=\"heap\", instance=~\"account.*\"}) * 100",
           "format": "time_series",
           "interval": "",
           "legendFormat": "Account",
@@ -126,7 +126,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "expr": "jvm_memory_usage{service=\"card\", area=\"heap\"}",
+          "expr": "(jvm_memory_used_bytes{area=\"heap\", instance=~\"card.*\"} / jvm_memory_max_bytes{area=\"heap\", instance=~\"card.*\"}) * 100",
           "format": "time_series",
           "interval": "",
           "legendFormat": "Card",
@@ -185,7 +185,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "expr": "jvm_memory_usage{service=\"loan\", area=\"heap\"}",
+          "expr": "(jvm_memory_used_bytes{area=\"heap\", instance=~\"loan.*\"} / jvm_memory_max_bytes{area=\"heap\", instance=~\"loan.*\"}) * 100",
           "format": "time_series",
           "interval": "",
           "legendFormat": "Loan",
@@ -244,7 +244,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "expr": "jvm_memory_usage{service=\"customer-gateway\", area=\"heap\"}",
+          "expr": "(jvm_memory_used_bytes{area=\"heap\", instance=~\"gateway.*\"} / jvm_memory_max_bytes{area=\"heap\", instance=~\"gateway.*\"}) * 100",
           "format": "time_series",
           "interval": "",
           "legendFormat": "Gateway",
