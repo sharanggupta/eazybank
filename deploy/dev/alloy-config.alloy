@@ -13,8 +13,6 @@ loki.source.docker "default" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.docker.containers.targets
   forward_to = [loki.process.parse_json.receiver]
-
-  relabeling_rules = discovery.docker.containers.relabeling_rules
 }
 
 // Parse JSON logs and extract fields
