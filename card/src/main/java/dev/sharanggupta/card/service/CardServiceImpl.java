@@ -1,6 +1,8 @@
 package dev.sharanggupta.card.service;
 
+import dev.sharanggupta.card.dto.CardCreateRequest;
 import dev.sharanggupta.card.dto.CardDto;
+import dev.sharanggupta.card.dto.CardUpdateRequest;
 import dev.sharanggupta.card.entity.Card;
 import dev.sharanggupta.card.exception.CardAlreadyExistsException;
 import dev.sharanggupta.card.exception.ResourceNotFoundException;
@@ -8,67 +10,81 @@ import dev.sharanggupta.card.mapper.CardMapper;
 import dev.sharanggupta.card.repository.CardRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.Random;
 
 @Service
 @AllArgsConstructor
-@Transactional
 public class CardServiceImpl implements CardService {
 
     private static final int CARD_NUMBER_LENGTH = 16;
-    private static final Random random = new Random();
-
     private final CardRepository cardRepository;
+    private final Random random = new Random();
 
     @Override
-    public void createCard(CardDto cardDto) {
-        validateCardDoesNotExist(cardDto.getMobileNumber());
-        Card card = CardMapper.mapToCard(cardDto, new Card());
-        card.setCardNumber(generateCardNumber());
-        card.setAvailableAmount(cardDto.getTotalLimit());
-        card.setAmountUsed(0);
-        cardRepository.save(card);
-    }
+    public Mono<Void> createCard(String mobileNumber, CardCreateRequest request) {
+        Card card = Card.builder()
+                .mobileNumber(mobileNumber)
+                .cardNumber(generateCardNumber())
+                .cardType(request.getCardType())
+                .totalLimit(request.getTotalLimit())
+                .amountUsed(0)
+                .availableAmount(request.getTotalLimit())
+                .build();
 
-    @Override
-    @Transactional(readOnly = true)
-    public CardDto fetchCard(String mobileNumber) {
-        Card card = getCardByMobileNumber(mobileNumber);
-        return CardMapper.mapToCardDto(card, new CardDto());
-    }
-
-    @Override
-    public void updateCard(CardDto cardDto) {
-        Card card = getCardByMobileNumber(cardDto.getMobileNumber());
-        CardMapper.mapToCard(cardDto, card);
-        cardRepository.save(card);
-    }
-
-    @Override
-    public void deleteCard(String mobileNumber) {
-        Card card = getCardByMobileNumber(mobileNumber);
-        cardRepository.delete(card);
-    }
-
-    private void validateCardDoesNotExist(String mobileNumber) {
-        cardRepository.findByMobileNumber(mobileNumber).ifPresent(card -> {
-            throw new CardAlreadyExistsException(
-                    "Card already exists for mobile number " + mobileNumber);
-        });
-    }
-
-    private Card getCardByMobileNumber(String mobileNumber) {
         return cardRepository.findByMobileNumber(mobileNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Card", "mobileNumber", mobileNumber));
+                .flatMap(existing -> Mono.error(new CardAlreadyExistsException(
+                        "Card already exists for mobile number " + mobileNumber
+                )))
+                .switchIfEmpty(cardRepository.save(card))
+                .then();
+    }
+
+    @Override
+    public Mono<CardDto> fetchCard(String mobileNumber) {
+        return getCardByMobileNumber(mobileNumber)
+                .map(CardMapper::mapToDto);
+    }
+
+    @Override
+    public Mono<Void> updateCard(String mobileNumber, CardUpdateRequest request) {
+        return getCardByMobileNumber(mobileNumber)
+                .map(existing -> {
+                    existing.setCardNumber(request.getCardNumber());
+                    existing.setCardType(request.getCardType());
+                    existing.setTotalLimit(request.getTotalLimit());
+                    existing.setAmountUsed(request.getAmountUsed());
+                    existing.setAvailableAmount(request.getTotalLimit() - request.getAmountUsed());
+                    return existing;
+                })
+                .flatMap(cardRepository::save)
+                .then();
+    }
+
+    @Override
+    public Mono<Void> deleteCard(String mobileNumber) {
+        return getCardByMobileNumber(mobileNumber)
+                .flatMap(cardRepository::delete)
+                .then();
+    }
+
+    // -----------------------
+    // Helpers
+    // -----------------------
+
+    private Mono<Card> getCardByMobileNumber(String mobileNumber) {
+        return cardRepository.findByMobileNumber(mobileNumber)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                        "Card", "mobileNumber", mobileNumber
+                )));
     }
 
     private String generateCardNumber() {
-        StringBuilder cardNumber = new StringBuilder(CARD_NUMBER_LENGTH);
+        StringBuilder sb = new StringBuilder(CARD_NUMBER_LENGTH);
         for (int i = 0; i < CARD_NUMBER_LENGTH; i++) {
-            cardNumber.append(random.nextInt(10));
+            sb.append(random.nextInt(10));
         }
-        return cardNumber.toString();
+        return sb.toString();
     }
 }

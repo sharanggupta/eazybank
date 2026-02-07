@@ -1,72 +1,73 @@
 package dev.sharanggupta.account.exception;
 
 import dev.sharanggupta.account.dto.ErrorResponseDto;
-import org.springframework.http.HttpHeaders;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @ControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler {
 
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<ResponseEntity<Map<String, String>>> handleWebExchangeBindException(
+            WebExchangeBindException ex) {
         Map<String, String> validationErrors = new HashMap<>();
-        List<ObjectError> validationErrorList = ex.getBindingResult().getAllErrors();
-
-        validationErrorList.forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String validationMsg = error.getDefaultMessage();
-            validationErrors.put(fieldName, validationMsg);
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            if (error instanceof FieldError fieldError) {
+                validationErrors.put(fieldError.getField(), error.getDefaultMessage());
+            }
         });
-        return new ResponseEntity<>(validationErrors, HttpStatus.BAD_REQUEST);
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationErrors));
     }
 
     @ExceptionHandler(CustomerAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponseDto> handleCustomerAlreadyExistsException(
-            CustomerAlreadyExistsException exception, WebRequest webRequest) {
-        return buildErrorResponse(webRequest, HttpStatus.BAD_REQUEST, exception.getMessage());
+    public Mono<ResponseEntity<ErrorResponseDto>> handleCustomerAlreadyExistsException(
+            CustomerAlreadyExistsException ex, ServerWebExchange exchange) {
+        log.warn("Customer already exists: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleResourceNotFoundException(
-            ResourceNotFoundException exception, WebRequest webRequest) {
-        return buildErrorResponse(webRequest, HttpStatus.NOT_FOUND, exception.getMessage());
+    public Mono<ResponseEntity<ErrorResponseDto>> handleResourceNotFoundException(
+            ResourceNotFoundException ex, ServerWebExchange exchange) {
+        log.info("Resource not found: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(AccountDetailsMissingException.class)
-    public ResponseEntity<ErrorResponseDto> handleAccountDetailsMissingException(
-            AccountDetailsMissingException exception, WebRequest webRequest) {
-        return buildErrorResponse(webRequest, HttpStatus.BAD_REQUEST, exception.getMessage());
+    public Mono<ResponseEntity<ErrorResponseDto>> handleAccountDetailsMissingException(
+            AccountDetailsMissingException ex, ServerWebExchange exchange) {
+        log.warn("Account details missing: {}", ex.getMessage());
+        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleGlobalException(
-            Exception exception, WebRequest webRequest) {
-        return buildErrorResponse(webRequest, HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+    public Mono<ResponseEntity<ErrorResponseDto>> handleGlobalException(
+            Exception ex, ServerWebExchange exchange) {
+        log.error("Unexpected error for request {}: {}", exchange.getRequest().getURI(), ex.getMessage(), ex);
+        return buildErrorResponse(exchange, HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.");
     }
 
-    private ResponseEntity<ErrorResponseDto> buildErrorResponse(
-            WebRequest webRequest, HttpStatus status, String message) {
+    private Mono<ResponseEntity<ErrorResponseDto>> buildErrorResponse(
+            ServerWebExchange exchange, HttpStatus status, String message) {
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                webRequest.getDescription(false),
+                exchange.getRequest().getURI().toString(),
                 status,
                 message,
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(status).body(errorResponse);
+        return Mono.just(ResponseEntity.status(status).body(errorResponse));
     }
 }

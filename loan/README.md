@@ -19,40 +19,43 @@ The Loan Service handles:
 
 ## API Endpoints
 
+All endpoints use mobile number as a path parameter for RESTful resource identification.
+
 ### Create Loan
 
 ```http
-POST /loan/api
+POST /loan/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
   "loanType": "Home Loan",
   "totalLoan": 500000
 }
 ```
 
+Example: `POST /loan/api/1234567890`
+
 **Response (201 Created)**:
 ```json
 {
-  "loanNumber": "LN-001-234567",
-  "loanType": "Home Loan",
-  "totalLoan": 500000,
-  "amountPaid": 0,
-  "outstandingAmount": 500000
+  "statusCode": "201",
+  "statusMessage": "Loan created successfully"
 }
 ```
 
 ### Fetch Loan
 
 ```http
-GET /loan/api?mobileNumber=1234567890
+GET /loan/api/{mobileNumber}
 ```
+
+Example: `GET /loan/api/1234567890`
 
 **Response (200 OK)**:
 ```json
 {
-  "loanNumber": "LN-001-234567",
+  "mobileNumber": "1234567890",
+  "loanNumber": "123456789012",
   "loanType": "Home Loan",
   "totalLoan": 500000,
   "amountPaid": 50000,
@@ -65,24 +68,28 @@ GET /loan/api?mobileNumber=1234567890
 ### Update Loan
 
 ```http
-PUT /loan/api
+PUT /loan/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
+  "loanNumber": "123456789012",
   "loanType": "Home Loan",
   "totalLoan": 500000,
   "amountPaid": 100000
 }
 ```
 
+Example: `PUT /loan/api/1234567890`
+
 **Response (204 No Content)**
 
 ### Delete Loan
 
 ```http
-DELETE /loan/api?mobileNumber=1234567890
+DELETE /loan/api/{mobileNumber}
 ```
+
+Example: `DELETE /loan/api/1234567890`
 
 **Response (204 No Content)**
 
@@ -222,20 +229,20 @@ curl http://localhost:8090/loan/actuator/health
 
 ```bash
 # Create loan
-curl -X POST http://localhost:8090/loan/api \
+curl -X POST http://localhost:8090/loan/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000}'
+  -d '{"loanType": "Home Loan", "totalLoan": 500000}'
 
 # Fetch loan
-curl http://localhost:8090/loan/api?mobileNumber=1234567890
+curl http://localhost:8090/loan/api/1234567890
 
 # Update loan (payment progress)
-curl -X PUT http://localhost:8090/loan/api \
+curl -X PUT http://localhost:8090/loan/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+  -d '{"loanNumber": "123456789012", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
 
 # Delete loan
-curl -X DELETE http://localhost:8090/loan/api?mobileNumber=1234567890
+curl -X DELETE http://localhost:8090/loan/api/1234567890
 ```
 
 ### Run Unit Tests
@@ -252,7 +259,7 @@ cd loan
 When loan service fails:
 
 ```bash
-# GET /api/customer/1234567890 on gateway with loan service down
+# GET /api/customer/details/1234567890 on customer-gateway with loan service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },

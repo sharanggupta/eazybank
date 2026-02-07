@@ -29,7 +29,7 @@ on:
   workflow_call:
     inputs:
       service:
-        description: 'Service name (account|card|loan|gateway)'
+        description: 'Service name (account|card|loan|customer-gateway)'
         required: true
         type: string
       registry:

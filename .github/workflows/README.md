@@ -223,7 +223,7 @@ All workflows test code before building images:
 cd account && ./mvnw clean test
 cd card && ./mvnw clean test
 cd loan && ./mvnw clean test
-cd gateway && ./mvnw clean test
+cd customer-gateway && ./mvnw clean test
 ```
 
 ### 5. Review Staging Before Production
@@ -231,7 +231,7 @@ cd gateway && ./mvnw clean test
 Always verify staging deployment before approving production:
 ```bash
 kubectl logs -f deployment/account -n eazybank-staging
-curl http://CLUSTER_IP:NODEPORT/swagger-ui.html  # Test gateway
+curl http://CLUSTER_IP:NODEPORT/swagger-ui.html  # Test customer-gateway
 ```
 
 ---
@@ -261,7 +261,7 @@ kubectl get svc -n eazybank-staging
 kubectl logs -f deployment/account -n eazybank-staging
 kubectl logs -f deployment/card -n eazybank-staging
 kubectl logs -f deployment/loan -n eazybank-staging
-kubectl logs -f deployment/gateway -n eazybank-staging
+kubectl logs -f deployment/customer-gateway -n eazybank-staging
 ```
 
 ### Access Services
@@ -269,7 +269,7 @@ kubectl logs -f deployment/gateway -n eazybank-staging
 **Gateway** (externally exposed via NodePort):
 ```bash
 # Get NodePort
-NODEPORT=$(kubectl get svc gateway -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
+NODEPORT=$(kubectl get svc customer-gateway -n eazybank-staging -o jsonpath='{.spec.ports[0].nodePort}')
 
 # Access Swagger UI
 # http://CLUSTER_IP:$NODEPORT/swagger-ui.html

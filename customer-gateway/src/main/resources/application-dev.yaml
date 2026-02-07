@@ -1,0 +1,13 @@
+# Development profile - aggressive circuit breaker thresholds for quick feedback
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 2
+        minimum-number-of-calls: 1
+        failure-rate-threshold: 100
+        wait-duration-in-open-state: 5s
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
+          - dev.sharanggupta.customergateway.exception.ResourceNotFoundException

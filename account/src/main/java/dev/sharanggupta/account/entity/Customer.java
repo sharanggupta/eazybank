@@ -1,18 +1,13 @@
 package dev.sharanggupta.account.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "customer")
+@Table("customer")
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor @ToString
 public class Customer extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long customerId;
     private String name;
     private String email;

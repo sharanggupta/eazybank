@@ -5,21 +5,35 @@ import dev.sharanggupta.card.entity.Card;
 
 public class CardMapper {
 
-    public static CardDto mapToCardDto(Card source, CardDto destination) {
-        destination.setCardNumber(source.getCardNumber());
-        destination.setMobileNumber(source.getMobileNumber());
-        destination.setCardType(source.getCardType());
-        destination.setTotalLimit(source.getTotalLimit());
-        destination.setAmountUsed(source.getAmountUsed());
-        return destination;
+    // Card -> CardDto
+    public static CardDto mapToDto(Card card) {
+        return CardDto.builder()
+                .mobileNumber(card.getMobileNumber())
+                .cardNumber(card.getCardNumber())
+                .cardType(card.getCardType())
+                .totalLimit(card.getTotalLimit())
+                .amountUsed(card.getAmountUsed())
+                .build();
     }
 
-    public static Card mapToCard(CardDto source, Card destination) {
-        destination.setMobileNumber(source.getMobileNumber());
-        destination.setCardType(source.getCardType());
-        destination.setTotalLimit(source.getTotalLimit());
-        destination.setAmountUsed(source.getAmountUsed());
-        destination.setAvailableAmount(source.getAvailableAmount());
-        return destination;
+    // CardDto -> Card (new)
+    public static Card mapToEntity(CardDto dto) {
+        return Card.builder()
+                .mobileNumber(dto.getMobileNumber())
+                .cardType(dto.getCardType())
+                .totalLimit(dto.getTotalLimit())
+                .amountUsed(dto.getAmountUsed())
+                .availableAmount(dto.getAvailableAmount())
+                .build();
+    }
+
+    // CardDto -> existing Card (for updates)
+    public static Card updateEntity(CardDto dto, Card existing) {
+        return existing.toBuilder()
+                .cardType(dto.getCardType())
+                .totalLimit(dto.getTotalLimit())
+                .amountUsed(dto.getAmountUsed())
+                .availableAmount(dto.getAvailableAmount())
+                .build();
     }
 }

@@ -19,40 +19,43 @@ The Card Service handles:
 
 ## API Endpoints
 
+All endpoints use mobile number as a path parameter for RESTful resource identification.
+
 ### Create Card
 
 ```http
-POST /card/api
+POST /card/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
   "cardType": "Credit Card",
   "totalLimit": 100000
 }
 ```
 
+Example: `POST /card/api/1234567890`
+
 **Response (201 Created)**:
 ```json
 {
-  "cardNumber": "1234-5678-9012-3456",
-  "cardType": "Credit Card",
-  "totalLimit": 100000,
-  "amountUsed": 0,
-  "availableAmount": 100000
+  "statusCode": "201",
+  "statusMessage": "Card created successfully"
 }
 ```
 
 ### Fetch Card
 
 ```http
-GET /card/api?mobileNumber=1234567890
+GET /card/api/{mobileNumber}
 ```
+
+Example: `GET /card/api/1234567890`
 
 **Response (200 OK)**:
 ```json
 {
-  "cardNumber": "1234-5678-9012-3456",
+  "mobileNumber": "1234567890",
+  "cardNumber": "1234567890123456",
   "cardType": "Credit Card",
   "totalLimit": 100000,
   "amountUsed": 5000,
@@ -65,24 +68,28 @@ GET /card/api?mobileNumber=1234567890
 ### Update Card
 
 ```http
-PUT /card/api
+PUT /card/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
+  "cardNumber": "1234567890123456",
   "cardType": "Credit Card",
   "totalLimit": 200000,
   "amountUsed": 5000
 }
 ```
 
+Example: `PUT /card/api/1234567890`
+
 **Response (204 No Content)**
 
 ### Delete Card
 
 ```http
-DELETE /card/api?mobileNumber=1234567890
+DELETE /card/api/{mobileNumber}
 ```
+
+Example: `DELETE /card/api/1234567890`
 
 **Response (204 No Content)**
 
@@ -223,20 +230,20 @@ curl http://localhost:9000/card/actuator/health
 
 ```bash
 # Create card
-curl -X POST http://localhost:9000/card/api \
+curl -X POST http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 100000}'
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
 
 # Fetch card
-curl http://localhost:9000/card/api?mobileNumber=1234567890
+curl http://localhost:9000/card/api/1234567890
 
 # Update card
-curl -X PUT http://localhost:9000/card/api \
+curl -X PUT http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+  -d '{"cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
 
 # Delete card
-curl -X DELETE http://localhost:9000/card/api?mobileNumber=1234567890
+curl -X DELETE http://localhost:9000/card/api/1234567890
 ```
 
 ### Run Unit Tests
@@ -253,7 +260,7 @@ cd card
 When card service fails:
 
 ```bash
-# GET /api/customer/1234567890 on gateway with card service down
+# GET /api/customer/details/1234567890 on customer-gateway with card service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },
@@ -303,5 +310,3 @@ Customer profile is still returned with account and loan data intact.
 
 See [../docs/configuration-reference.md](../docs/configuration-reference.md) for full configuration options.
 See [../deploy/dev/resilience-testing.md](../deploy/dev/resilience-testing.md) to test graceful degradation.
-Updated card documentation
-Updated card service documentation - test run

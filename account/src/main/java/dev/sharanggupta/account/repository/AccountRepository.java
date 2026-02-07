@@ -1,16 +1,15 @@
 package dev.sharanggupta.account.repository;
 
 import dev.sharanggupta.account.entity.Account;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 @Repository
-public interface AccountRepository extends JpaRepository<Account, Long> {
-    Optional<Account> findByCustomerId(Long customerId);
+public interface AccountRepository extends ReactiveCrudRepository<Account, Long> {
+    Mono<Account> findByCustomerId(Long customerId);
 
-    @Modifying
-    void deleteByCustomerId(Long customerId);
+    Mono<Account> findByAccountNumber(String accountNumber);
+
+    Mono<Void> deleteByCustomerId(Long customerId);
 }

@@ -1,6 +1,8 @@
 package dev.sharanggupta.loan;
 
+import dev.sharanggupta.loan.dto.LoanCreateRequest;
 import dev.sharanggupta.loan.dto.LoanDto;
+import dev.sharanggupta.loan.dto.LoanUpdateRequest;
 import dev.sharanggupta.loan.dto.ResponseDto;
 import dev.sharanggupta.loan.repository.LoanRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -13,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LoanEndToEndTest extends BaseEndToEndTest {
 
-    private static final String LOAN_API_PATH = "/loan/api";
+    private static final String LOAN_API_PATH = "/api";
     private static final String VALID_MOBILE_NUMBER = "1234567890";
     private static final String HOME_LOAN_TYPE = "Home Loan";
-    private static final int DEFAULT_TOTAL_LOAN = 500000;
+    private static final int DEFAULT_TOTAL_LOAN = 500_000;
     private static final String STATUS_201 = "201";
     private static final String LOAN_CREATED_MESSAGE = "Loan created successfully";
 
@@ -25,18 +27,18 @@ class LoanEndToEndTest extends BaseEndToEndTest {
 
     @AfterEach
     void tearDown() {
-        loanRepository.deleteAll();
+        loanRepository.deleteAll().block(); // block here is ok for cleanup
     }
 
     @Test
     @DisplayName("Should create a new loan")
     void shouldCreateLoan() {
-        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        LoanCreateRequest loanRequest = createLoanRequest(HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
 
         client.post()
-                .uri(LOAN_API_PATH)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanRequest)
+                .bodyValue(loanRequest)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
@@ -49,11 +51,11 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should fetch loan by mobile number")
     void shouldFetchLoanByMobileNumber() {
-        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
-        createLoan(loanRequest);
+        LoanCreateRequest loanRequest = createLoanRequest(HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        createLoan(VALID_MOBILE_NUMBER, loanRequest);
 
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(LoanDto.class)
@@ -71,38 +73,44 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should update loan details")
     void shouldUpdateLoan() {
-        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
-        createLoan(loanRequest);
+        LoanCreateRequest loanRequest = createLoanRequest(HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        createLoan(VALID_MOBILE_NUMBER, loanRequest);
 
         LoanDto existingLoan = fetchLoan(VALID_MOBILE_NUMBER);
-        int amountPaid = 100000;
-        existingLoan.setAmountPaid(amountPaid);
+
+        int amountPaid = 100_000;
+        LoanUpdateRequest updatedLoan = LoanUpdateRequest.builder()
+                .loanNumber(existingLoan.getLoanNumber())
+                .loanType(existingLoan.getLoanType())
+                .totalLoan(existingLoan.getTotalLoan())
+                .amountPaid(amountPaid)
+                .build();
 
         client.put()
-                .uri(LOAN_API_PATH)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(existingLoan)
+                .bodyValue(updatedLoan)
                 .exchange()
                 .expectStatus().isNoContent();
 
-        LoanDto updatedLoan = fetchLoan(VALID_MOBILE_NUMBER);
-        assertThat(updatedLoan.getAmountPaid()).isEqualTo(amountPaid);
-        assertThat(updatedLoan.getOutstandingAmount()).isEqualTo(DEFAULT_TOTAL_LOAN - amountPaid);
+        LoanDto fetched = fetchLoan(VALID_MOBILE_NUMBER);
+        assertThat(fetched.getAmountPaid()).isEqualTo(amountPaid);
+        assertThat(fetched.getOutstandingAmount()).isEqualTo(DEFAULT_TOTAL_LOAN - amountPaid);
     }
 
     @Test
     @DisplayName("Should delete loan by mobile number")
     void shouldDeleteLoan() {
-        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
-        createLoan(loanRequest);
+        LoanCreateRequest loanRequest = createLoanRequest(HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        createLoan(VALID_MOBILE_NUMBER, loanRequest);
 
         client.delete()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNoContent();
 
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -110,13 +118,13 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should reject duplicate loan creation")
     void shouldRejectDuplicateLoanCreation() {
-        LoanDto loanRequest = createLoanRequest(VALID_MOBILE_NUMBER, HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
-        createLoan(loanRequest);
+        LoanCreateRequest loanRequest = createLoanRequest(HOME_LOAN_TYPE, DEFAULT_TOTAL_LOAN);
+        createLoan(VALID_MOBILE_NUMBER, loanRequest);
 
         client.post()
-                .uri(LOAN_API_PATH)
+                .uri(LOAN_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanRequest)
+                .bodyValue(loanRequest)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -125,23 +133,27 @@ class LoanEndToEndTest extends BaseEndToEndTest {
     @DisplayName("Should return not found for non-existent loan")
     void shouldReturnNotFoundForNonExistentLoan() {
         client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=9999999999")
+                .uri(LOAN_API_PATH + "/9999999999")
                 .exchange()
                 .expectStatus().isNotFound();
     }
 
-    private void createLoan(LoanDto loanDto) {
+    // ----------------------
+    // Helpers
+    // ----------------------
+
+    private void createLoan(String mobileNumber, LoanCreateRequest request) {
         client.post()
-                .uri(LOAN_API_PATH)
+                .uri(LOAN_API_PATH + "/" + mobileNumber)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(loanDto)
+                .bodyValue(request)
                 .exchange()
                 .expectStatus().isCreated();
     }
 
     private LoanDto fetchLoan(String mobileNumber) {
         return client.get()
-                .uri(LOAN_API_PATH + "?mobileNumber=" + mobileNumber)
+                .uri(LOAN_API_PATH + "/" + mobileNumber)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(LoanDto.class)
@@ -149,11 +161,10 @@ class LoanEndToEndTest extends BaseEndToEndTest {
                 .getResponseBody();
     }
 
-    private LoanDto createLoanRequest(String mobileNumber, String loanType, int totalLoan) {
-        LoanDto loanDto = new LoanDto();
-        loanDto.setMobileNumber(mobileNumber);
-        loanDto.setLoanType(loanType);
-        loanDto.setTotalLoan(totalLoan);
-        return loanDto;
+    private LoanCreateRequest createLoanRequest(String loanType, int totalLoan) {
+        return LoanCreateRequest.builder()
+                .loanType(loanType)
+                .totalLoan(totalLoan)
+                .build();
     }
 }

@@ -1,20 +1,18 @@
 server:
   port: 8080
-  servlet:
-    context-path: /account
 spring:
+  webflux:
+    base-path: /account
   application:
     name: account
-  datasource:
-    url: jdbc:postgresql://localhost:5432/accountdb
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/accountdb}
+    username: ${SPRING_R2DBC_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_R2DBC_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+    pool:
+      initial-size: 10
+      max-size: 20
+      max-idle-time: 30m
   sql:
     init:
       mode: always

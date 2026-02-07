@@ -8,10 +8,10 @@ Practical guide for managing EazyBank deployments. For initial setup, see [READM
 
 ```bash
 # Edit code
-nano gateway/src/main/java/...
+nano customer-gateway/src/main/java/...
 
 # Test locally
-cd gateway && ./mvnw test
+cd customer-gateway && ./mvnw test
 
 # Commit and push
 git commit -am "Update gateway service"
@@ -38,7 +38,7 @@ kubectl describe pod POD_NAME -n eazybank-staging
 
 ```bash
 # Gateway
-kubectl logs -f deployment/gateway -n eazybank-staging
+kubectl logs -f deployment/customer-gateway -n eazybank-staging
 
 # Backend services
 kubectl logs -f deployment/account -n eazybank-staging
@@ -53,11 +53,11 @@ kubectl logs -f statefulset/account-postgresql -n eazybank-staging
 
 ```bash
 # Edit values for permanent scaling
-nano deploy/helm/services/gateway/environments/staging/k8s-values.yaml
+nano deploy/helm/services/customer-gateway/environments/staging/k8s-values.yaml
 # Change: k8s.replicas: N
 
 # Or scale immediately
-kubectl scale deployment gateway --replicas=3 -n eazybank-staging
+kubectl scale deployment customer-gateway --replicas=3 -n eazybank-staging
 ```
 
 ### Access the Gateway
@@ -65,12 +65,12 @@ kubectl scale deployment gateway --replicas=3 -n eazybank-staging
 The gateway is the only externally exposed service (NodePort). Backend services use ClusterIP and are only reachable within the cluster.
 
 ```bash
-# Get the gateway NodePort
-kubectl get svc gateway -n eazybank-staging
+# Get the customer-gateway NodePort
+kubectl get svc customer-gateway -n eazybank-staging
 
 # Example output:
 # NAME      TYPE       CLUSTER-IP   EXTERNAL-IP   PORT(S)          AGE
-# gateway   NodePort   10.x.x.x    <none>        8000:31234/TCP   5m
+# customer-gateway   NodePort   10.x.x.x    <none>        8000:31234/TCP   5m
 #
 # Access via: http://CLUSTER_IP:31234/swagger-ui.html
 
@@ -83,10 +83,10 @@ curl http://localhost:8080/account/actuator/health
 
 ```bash
 # View history
-helm history gateway -n eazybank-staging
+helm history customer-gateway -n eazybank-staging
 
 # Rollback to previous version
-helm rollback gateway 1 -n eazybank-staging
+helm rollback customer-gateway 1 -n eazybank-staging
 ```
 
 ### Approve Production Deployment

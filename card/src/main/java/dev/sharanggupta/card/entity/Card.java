@@ -1,38 +1,41 @@
 package dev.sharanggupta.card.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "card")
+@Table("card")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class Card extends BaseEntity {
 
     @Id
-    @Column(length = 16)
+    @Column("card_id")
+    private Long cardId;
+
+    @Column("card_number")
     private String cardNumber;
 
-    @Column(length = 15, nullable = false)
+    @Column("mobile_number")
     private String mobileNumber;
 
-    @Column(length = 100, nullable = false)
+    @Column("card_type")
     private String cardType;
 
-    @Column(nullable = false)
+    @Column("total_limit")
     private int totalLimit;
 
-    @Column(nullable = false)
+    @Column("amount_used")
     private int amountUsed;
 
-    @Column(nullable = false)
+    @Column("available_amount")
     private int availableAmount;
 }

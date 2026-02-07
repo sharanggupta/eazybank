@@ -1,20 +1,14 @@
 server:
   port: 8090
-  servlet:
-    context-path: /loan
 spring:
   application:
     name: loan
-  datasource:
-    url: jdbc:postgresql://localhost:5432/loandb
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
+  webflux:
+    base-path: /loan
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/loandb}
+    username: ${SPRING_R2DBC_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_R2DBC_PASSWORD:${POSTGRES_PASSWORD:postgres}}
   sql:
     init:
       mode: always

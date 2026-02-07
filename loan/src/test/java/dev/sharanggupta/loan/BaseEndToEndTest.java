@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -19,20 +19,26 @@ public abstract class BaseEndToEndTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.r2dbc.url", () ->
+                String.format("r2dbc:postgresql://%s:%d/%s",
+                        postgres.getHost(),
+                        postgres.getMappedPort(5432),
+                        postgres.getDatabaseName()
+                )
+        );
+        registry.add("spring.r2dbc.username", postgres::getUsername);
+        registry.add("spring.r2dbc.password", postgres::getPassword);
+        registry.add("spring.webflux.base-path", () -> "");
     }
 
     @LocalServerPort
     private int port;
 
-    protected RestTestClient client;
+    protected WebTestClient client;
 
     @BeforeEach
     void setUpClient() {
-        client = RestTestClient.bindToServer()
+        client = WebTestClient.bindToServer()
                 .baseUrl("http://localhost:" + port)
                 .build();
     }

@@ -1,21 +1,23 @@
 package dev.sharanggupta.account.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "account")
+@Table("account")
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor @ToString
 public class Account extends BaseEntity {
 
     @Id
-    private Long accountNumber;
+    private Long accountId;
+
+    @Column("account_number")
+    private String accountNumber;
 
     private Long customerId;
 

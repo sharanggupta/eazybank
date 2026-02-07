@@ -52,42 +52,43 @@ SERVICES_LOAN_URL=http://loan:8090          # Loan service URL
 
 ### Circuit Breaker Configuration
 
-**For each service** (account-service, card-service, loan-service):
+Circuit breaker settings are configured via **Spring profiles** rather than environment variables. The gateway uses `application.yaml` (production defaults) and `application-dev.yaml` (development overrides).
 
-```
-# Sliding window size (number of calls to evaluate)
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_{SERVICE}_SLIDINGWINDOWSIZE=2
-
-# Minimum calls needed before circuit breaker evaluates state
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_{SERVICE}_MINIMUMNUMBEROFCALLS=1
-
-# Failure rate threshold (%) to trip circuit breaker
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_{SERVICE}_FAILURERATHRESHOLD=100
-
-# Duration to wait before transitioning from OPEN to HALF_OPEN
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_{SERVICE}_WAITDURATIONINOPENSTATE=5s
-
-# Calls permitted in HALF_OPEN state before evaluating
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_{SERVICE}_PERMITTEDNUMBEROFCALLSINHALFOPPENSTATE=3
-```
-
-**Dev Default Values** (in `deploy/dev/docker-compose.yml`):
+**Dev Profile** (`application-dev.yaml`):
 ```yaml
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_SLIDINGWINDOWSIZE: "2"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_MINIMUMNUMBEROFCALLS: "1"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_FAILURERATHRESHOLD: "100"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_WAITDURATIONINOPENSTATE: "5s"
-
-# (Same pattern for card-service and loan-service)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 2           # Small sample for quick feedback
+        minimum-number-of-calls: 1       # Trip after first failure
+        failure-rate-threshold: 100      # Any failure triggers
+        wait-duration-in-open-state: 5s  # Fast recovery
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
 ```
 
-**Production Recommended Values**:
+**Production Defaults** (`application.yaml`):
 ```yaml
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_SLIDINGWINDOWSIZE: "100"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_MINIMUMNUMBEROFCALLS: "10"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_FAILURERATHRESHOLD: "50"
-RESILIENCE4J_CIRCUITBREAKER_INSTANCES_ACCOUNT_SERVICE_WAITDURATIONINOPENSTATE: "60s"
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
 ```
+
+**Activating Dev Profile**:
+```yaml
+# In docker-compose.yml
+environment:
+  SPRING_PROFILES_ACTIVE: dev
+```
+
+**Note**: The `ignore-exceptions` setting ensures that 400/404 errors (business logic errors) don't trip the circuit breaker - only connection failures and 5xx errors do.
 
 ## Spring Profiles
 
@@ -113,7 +114,7 @@ server:
 
 spring:
   application:
-    name: gateway                      # Service name
+    name: customergateway                      # Service name
   threads:
     virtual:
       enabled: true                    # Enable virtual threads (Java 21+)
@@ -148,7 +149,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,circuitbreakers
+        include: health,info,customergateway,circuitbreakers
   health:
     circuitbreakers:
       enabled: true
@@ -351,11 +352,12 @@ curl http://localhost:8000/actuator/circuitbreakers/card-service
 
 ## Docker Compose Environment
 
-All services in `docker-compose.yml` use `SPRING_PROFILES_ACTIVE=dev`:
+All services in `docker-compose.yml` use `SPRING_PROFILES_ACTIVE=dev` for aggressive circuit breaker thresholds:
 
 ```yaml
 services:
   gateway:
+    image: eazybank/customer-gateway
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SERVICES_ACCOUNT_URL: http://account:8080
@@ -363,9 +365,20 @@ services:
       SERVICES_LOAN_URL: http://loan:8090
 ```
 
-To override for production testing:
+**Backend services** connect to the shared PostgreSQL:
+```yaml
+  account:
+    image: eazybank/account
+    environment:
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/accountdb
+      SPRING_R2DBC_USERNAME: postgres
+      SPRING_R2DBC_PASSWORD: postgres
+```
+
+To test with production-like thresholds:
 
 ```bash
+# Override profile via environment
 SPRING_PROFILES_ACTIVE=prod docker compose up
 ```
 

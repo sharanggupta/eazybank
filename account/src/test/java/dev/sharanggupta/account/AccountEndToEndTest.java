@@ -1,5 +1,6 @@
 package dev.sharanggupta.account;
 
+import dev.sharanggupta.account.dto.AccountDto;
 import dev.sharanggupta.account.dto.CustomerDto;
 import dev.sharanggupta.account.dto.ResponseDto;
 import dev.sharanggupta.account.repository.AccountRepository;
@@ -9,15 +10,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AccountEndToEndTest extends BaseEndToEndTest {
 
-    private static final String API_CREATE_PATH = "/account/api/create";
-    private static final String API_FETCH_PATH = "/account/api/fetch";
-    private static final String API_UPDATE_PATH = "/account/api/update";
-    private static final String API_DELETE_PATH = "/account/api/delete";
+    private static final String API_CREATE_PATH = "/api";
+    private static final String API_FETCH_PATH = "/api";
+    private static final String API_UPDATE_PATH = "/api";
+    private static final String API_DELETE_PATH = "/api";
 
     private static final String VALID_NAME = "Test Customer";
     private static final String VALID_EMAIL = "test@example.com";
@@ -33,8 +35,8 @@ class AccountEndToEndTest extends BaseEndToEndTest {
 
     @AfterEach
     void tearDown() {
-        accountRepository.deleteAll();
-        customerRepository.deleteAll();
+        accountRepository.deleteAll().block();
+        customerRepository.deleteAll().block();
     }
 
     @Test
@@ -45,7 +47,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerRequest)
+                .body(Mono.just(customerRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(ResponseDto.class)
@@ -62,7 +64,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         createAccount(customerRequest);
 
         client.get()
-                .uri(API_FETCH_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(API_FETCH_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CustomerDto.class)
@@ -70,31 +72,40 @@ class AccountEndToEndTest extends BaseEndToEndTest {
                     assertThat(customer.getName()).isEqualTo(VALID_NAME);
                     assertThat(customer.getEmail()).isEqualTo(VALID_EMAIL);
                     assertThat(customer.getMobileNumber()).isEqualTo(VALID_MOBILE_NUMBER);
-                    assertThat(customer.getAccountDto()).isNotNull();
-                    assertThat(customer.getAccountDto().getAccountNumber()).isNotNull();
+                    assertThat(customer.getAccount()).isNotNull();
+                    assertThat(customer.getAccount().getAccountNumber()).isNotNull();
                 });
     }
 
     @Test
-    @DisplayName("Should update account details")
+    @DisplayName("Should update account details using mobile number")
     void shouldUpdateAccountDetails() {
+        // Given: A customer account exists
         CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
         createAccount(customerRequest);
 
-        CustomerDto existingCustomer = fetchAccount(VALID_MOBILE_NUMBER);
-        existingCustomer.setName("Updated Name");
-        existingCustomer.getAccountDto().setBranchAddress("456 New Address");
+        // When: Update using mobile number (no need to know account number)
+        CustomerDto updateRequest = CustomerDto.builder()
+                .name("Updated Name")
+                .email(VALID_EMAIL)
+                .mobileNumber(VALID_MOBILE_NUMBER)
+                .account(AccountDto.builder()
+                        .accountType("Savings")
+                        .branchAddress("456 New Address")
+                        .build())
+                .build();
 
         client.put()
                 .uri(API_UPDATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(existingCustomer)
+                .body(Mono.just(updateRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isNoContent();
 
+        // Then: Changes are persisted
         CustomerDto updatedCustomer = fetchAccount(VALID_MOBILE_NUMBER);
         assertThat(updatedCustomer.getName()).isEqualTo("Updated Name");
-        assertThat(updatedCustomer.getAccountDto().getBranchAddress()).isEqualTo("456 New Address");
+        assertThat(updatedCustomer.getAccount().getBranchAddress()).isEqualTo("456 New Address");
     }
 
     @Test
@@ -104,12 +115,12 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         createAccount(customerRequest);
 
         client.delete()
-                .uri(API_DELETE_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(API_DELETE_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNoContent();
 
         client.get()
-                .uri(API_FETCH_PATH + "?mobileNumber=" + VALID_MOBILE_NUMBER)
+                .uri(API_FETCH_PATH + "/" + VALID_MOBILE_NUMBER)
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -123,7 +134,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerRequest)
+                .body(Mono.just(customerRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -132,7 +143,7 @@ class AccountEndToEndTest extends BaseEndToEndTest {
     @DisplayName("Should return not found for non-existent account")
     void shouldReturnNotFoundForNonExistentAccount() {
         client.get()
-                .uri(API_FETCH_PATH + "?mobileNumber=9999999999")
+                .uri(API_FETCH_PATH + "/9999999999")
                 .exchange()
                 .expectStatus().isNotFound();
     }
@@ -141,14 +152,14 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.post()
                 .uri(API_CREATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(customerDto)
+                .body(Mono.just(customerDto), CustomerDto.class)
                 .exchange()
                 .expectStatus().isCreated();
     }
 
     private CustomerDto fetchAccount(String mobileNumber) {
         return client.get()
-                .uri(API_FETCH_PATH + "?mobileNumber=" + mobileNumber)
+                .uri(API_FETCH_PATH + "/" + mobileNumber)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CustomerDto.class)
@@ -157,10 +168,10 @@ class AccountEndToEndTest extends BaseEndToEndTest {
     }
 
     private CustomerDto createCustomerRequest(String name, String email, String mobileNumber) {
-        CustomerDto customerDto = new CustomerDto();
-        customerDto.setName(name);
-        customerDto.setEmail(email);
-        customerDto.setMobileNumber(mobileNumber);
-        return customerDto;
+        return CustomerDto.builder()
+                .name(name)
+                .email(email)
+                .mobileNumber(mobileNumber)
+                .build();
     }
 }
