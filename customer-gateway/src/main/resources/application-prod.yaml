@@ -6,6 +6,3 @@ management:
 logging:
   level:
     root: INFO
-    dev.sharanggupta: INFO
-    org.springframework.cloud.gateway: INFO
-    io.github.resilience4j: INFO

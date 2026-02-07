@@ -6,4 +6,3 @@ management:
 logging:
   level:
     root: INFO
-    dev.sharanggupta: INFO
