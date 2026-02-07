@@ -40,11 +40,11 @@ prometheus:
     storageClass: standard
     retention: 15d  # Retain metrics for 15 days
 
-  # Service configuration
+  # Service configuration - Expose via NodePort for external access
   service:
-    type: ClusterIP
+    type: NodePort
     port: 9090
-    nodePort: null
+    nodePort: 30090  # External access: http://<node-ip>:30090
 
   # Configuration for metric collection
   config:
@@ -82,11 +82,11 @@ grafana:
     name: grafana-admin-secret
     key: password
 
-  # Service configuration
+  # Service configuration - Expose via NodePort for external access
   service:
-    type: ClusterIP
+    type: NodePort
     port: 3000
-    nodePort: null
+    nodePort: 30300  # External access: http://<node-ip>:30300
 
   # Grafana plugins
   plugins:
@@ -127,11 +127,11 @@ loki:
       memory: "256Mi"
       cpu: "200m"
 
-  # Service configuration
+  # Service configuration - Expose via NodePort for external access (optional)
   service:
-    type: ClusterIP
+    type: NodePort
     port: 3100
-    nodePort: null
+    nodePort: 30100  # External access: http://<node-ip>:30100 (optional for debugging)
 
   # Storage configuration
   storage:
