@@ -1,0 +1,19 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observability-chart.fullname" . }}-grafana-dashboards
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  00-overview.json: |
+{{ .Files.Get "dashboards/00-overview.json" | indent 4 }}
+  01-http-metrics.json: |
+{{ .Files.Get "dashboards/01-http-metrics.json" | indent 4 }}
+  02-jvm-metrics.json: |
+{{ .Files.Get "dashboards/02-jvm-metrics.json" | indent 4 }}
+  03-circuit-breakers.json: |
+{{ .Files.Get "dashboards/03-circuit-breakers.json" | indent 4 }}
+{{- end }}
