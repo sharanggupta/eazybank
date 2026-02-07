@@ -7,18 +7,21 @@ receivers:
 processors:
   batch:
     timeout: 10s
-  memory_limiter:
-    check_interval: 1s
-    limit_mib: 512
+    send_batch_size: 1024
 
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: eazybank
+  logging:
+    loglevel: debug
 
 service:
   pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [batch]
       exporters: [prometheus]

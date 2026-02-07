@@ -84,6 +84,16 @@ k8s:
       timeoutSeconds: 3
       failureThreshold: 3
 
+# Observability configuration
+observability:
+  metrics:
+    enabled: true
+  tracing:
+    enabled: true
+    samplingRate: 1.0  # 100% in staging, override to 0.1 in production
+  logging:
+    enabled: true
+
 # PostgreSQL configuration
 postgresql:
   enabled: true

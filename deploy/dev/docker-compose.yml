@@ -85,9 +85,10 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.97.0
     container_name: eazybank-otel-collector
-    command: ["/otelcontribcol", "--config=/etc/otel-collector-config.yaml"]
+    command: ["otelcontribcol", "--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4318:4318"  # OTLP HTTP receiver
+      - "8889:8889"  # Prometheus metrics export
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     depends_on:
@@ -133,7 +134,7 @@ services:
       retries: 5
 
   loki:
-    image: grafana/loki:3.0.0
+    image: grafana/loki:2.8.0
     container_name: eazybank-loki
     command: -config.file=/etc/loki/local-config.yaml
     ports:
@@ -141,6 +142,8 @@ services:
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
       - loki_data:/loki
+      - loki_wal:/wal
+      - loki_compactor:/loki/compactor
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3100/ready || exit 1"]
       interval: 10s
@@ -167,3 +170,5 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  loki_wal:
+  loki_compactor:
