@@ -54,17 +54,15 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Mono<Void> updateAccount(CustomerDto customerDto) {
+        String mobileNumber = customerDto.getMobileNumber();
         AccountDto accountDto = Optional.ofNullable(customerDto.getAccount())
                 .orElseThrow(() -> new AccountDetailsMissingException("Account details are required for update"));
 
-        String accountNumber = Optional.ofNullable(accountDto.getAccountNumber())
-                .orElseThrow(() -> new AccountDetailsMissingException("Account number is required for update"));
-
-        return accountRepository.findByAccountNumber(accountNumber)
-                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Account", "accountNumber", accountNumber)))
-                .flatMap(account -> customerRepository.findById(account.getCustomerId())
-                        .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "customerId", account.getCustomerId().toString())))
-                        .flatMap(customer -> {
+        return customerRepository.findByMobileNumber(mobileNumber)
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)))
+                .flatMap(customer -> accountRepository.findByCustomerId(customer.getCustomerId())
+                        .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Account", "mobileNumber", mobileNumber)))
+                        .flatMap(account -> {
                             CustomerMapper.updateEntity(customerDto, customer);
                             AccountMapper.updateEntity(accountDto, account);
                             return customerRepository.save(customer)

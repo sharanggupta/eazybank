@@ -248,9 +248,9 @@ public class CustomerController {
                 .body(new ResponseDto("201", "Customer onboarded successfully"))));
     }
 
-    @GetMapping("/details")
+    @GetMapping("/details/{mobileNumber}")
     public Mono<ResponseEntity<CustomerDetails>> getCustomerDetails(
-            @RequestParam @ValidMobileNumber String mobileNumber) {
+            @PathVariable @ValidMobileNumber String mobileNumber) {
         return customerService.getCustomerDetails(mobileNumber)
             .map(ResponseEntity::ok);
     }

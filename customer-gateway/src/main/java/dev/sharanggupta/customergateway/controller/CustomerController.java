@@ -34,7 +34,8 @@ public class CustomerController {
     private static final String STATUS_CREATED = "201";
     private static final String STATUS_OK = "200";
     private static final String MESSAGE_ONBOARDED = "Customer onboarded successfully";
-    private static final String MESSAGE_OK = "Request processed successfully";
+    private static final String MESSAGE_UPDATED = "Customer details updated successfully";
+    private static final String MESSAGE_OFFBOARDED = "Customer offboarded successfully";
 
     private final CustomerService customerService;
 
@@ -54,9 +55,9 @@ public class CustomerController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Bad Request",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @GetMapping("/details")
+    @GetMapping("/details/{mobileNumber}")
     public Mono<ResponseEntity<CustomerProfile>> getCustomerDetails(
-            @RequestParam @ValidMobileNumber String mobileNumber) {
+            @PathVariable @ValidMobileNumber String mobileNumber) {
         return customerService.getCustomerDetails(mobileNumber)
                 .map(ResponseEntity::ok)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)));
@@ -71,7 +72,7 @@ public class CustomerController {
     @PutMapping("/update")
     public Mono<ResponseEntity<ApiResponse>> updateCustomer(@Valid @RequestBody CustomerAccount customerAccount) {
         return customerService.updateCustomer(customerAccount)
-                .then(Mono.just(createResponse(HttpStatus.OK, STATUS_OK, MESSAGE_OK)));
+                .then(Mono.just(createResponse(HttpStatus.OK, STATUS_OK, MESSAGE_UPDATED)));
     }
 
     @Operation(summary = "Offboard Customer", description = "Delete customer account")
@@ -82,11 +83,11 @@ public class CustomerController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "417", description = "Expectation Failed",
                 content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @DeleteMapping("/offboard")
+    @DeleteMapping("/offboard/{mobileNumber}")
     public Mono<ResponseEntity<ApiResponse>> offboardCustomer(
-            @RequestParam @ValidMobileNumber String mobileNumber) {
+            @PathVariable @ValidMobileNumber String mobileNumber) {
         return customerService.offboardCustomer(mobileNumber)
-                .then(Mono.just(createResponse(HttpStatus.OK, STATUS_OK, MESSAGE_OK)));
+                .then(Mono.just(createResponse(HttpStatus.OK, STATUS_OK, MESSAGE_OFFBOARDED)));
     }
 
     private ResponseEntity<ApiResponse> createResponse(HttpStatus httpStatus, String status, String message) {

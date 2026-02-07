@@ -17,7 +17,7 @@ curl -X POST http://localhost:8000/api/customer/onboard \
 # Response: {"statusCode":"201","statusMessage":"Customer onboarded successfully"}
 
 # Get customer details (aggregated account, card, loan)
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
 # Expected: 200 OK
 # Response: JSON with name, email, mobileNumber, account, card, loan details
 
@@ -28,15 +28,85 @@ curl -X PUT http://localhost:8000/api/customer/update \
 # Expected: 200 OK
 
 # Offboard customer (removes all data)
-curl -X DELETE "http://localhost:8000/api/customer/offboard?mobileNumber=1234567890"
+curl -X DELETE http://localhost:8000/api/customer/offboard/1234567890
 # Expected: 200 OK
 ```
 
 ---
 
-## Direct Downstream APIs
+## Card & Loan as Nested Resources
 
-For debugging individual services and bypassing the gateway.
+Cards and loans are accessed as nested sub-resources of a customer via the gateway.
+All requests go through gateway port 8000.
+
+### Card Operations
+
+```bash
+# Create card for customer
+curl -X POST http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
+# Expected: 201 Created
+
+# Fetch card
+curl http://localhost:8000/api/customer/1234567890/card
+# Expected: 200 OK with card details
+
+# Update card
+curl -X PUT http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+# Expected: 204 No Content
+
+# Delete card
+curl -X DELETE http://localhost:8000/api/customer/1234567890/card
+# Expected: 204 No Content
+```
+
+### Loan Operations
+
+```bash
+# Create loan for customer
+curl -X POST http://localhost:8000/api/customer/1234567890/loan \
+  -H "Content-Type: application/json" \
+  -d '{"loanType": "Home Loan", "totalLoan": 500000}'
+# Expected: 201 Created
+
+# Fetch loan
+curl http://localhost:8000/api/customer/1234567890/loan
+# Expected: 200 OK with loan details
+
+# Update loan
+curl -X PUT http://localhost:8000/api/customer/1234567890/loan \
+  -H "Content-Type: application/json" \
+  -d '{"loanNumber": "123456789012", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+# Expected: 204 No Content
+
+# Delete loan
+curl -X DELETE http://localhost:8000/api/customer/1234567890/loan
+# Expected: 204 No Content
+```
+
+### Account Operations (via gateway proxy)
+
+```bash
+# Fetch account
+curl http://localhost:8000/account/api/1234567890
+
+# Update account
+curl -X PUT http://localhost:8000/account/api \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Updated", "email": "john@example.com", "mobileNumber": "1234567890", "account": {"accountType": "Savings", "branchAddress": "456 New Address"}}'
+
+# Delete account
+curl -X DELETE http://localhost:8000/account/api/1234567890
+```
+
+---
+
+## Direct Service APIs (for debugging)
+
+For debugging, you can bypass the gateway and call services directly.
 
 ### Account Service (port 8080)
 
@@ -71,17 +141,17 @@ curl -X DELETE http://localhost:8080/account/api/1234567890
 
 ```bash
 # Create card
-curl -X POST http://localhost:9000/card/api \
+curl -X POST http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 100000}'
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
 
 # Fetch card by mobile number
 curl http://localhost:9000/card/api/1234567890
 
 # Update card
-curl -X PUT http://localhost:9000/card/api \
+curl -X PUT http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+  -d '{"cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
 
 # Delete card
 curl -X DELETE http://localhost:9000/card/api/1234567890
@@ -91,17 +161,17 @@ curl -X DELETE http://localhost:9000/card/api/1234567890
 
 ```bash
 # Create loan
-curl -X POST http://localhost:8090/loan/api \
+curl -X POST http://localhost:8090/loan/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "loanType": "Home Loan", "totalLoan": 500000}'
+  -d '{"loanType": "Home Loan", "totalLoan": 500000}'
 
 # Fetch loan by mobile number
 curl http://localhost:8090/loan/api/1234567890
 
 # Update loan
-curl -X PUT http://localhost:8090/loan/api \
+curl -X PUT http://localhost:8090/loan/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "loanNumber": "123456789012", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
+  -d '{"loanNumber": "123456789012", "loanType": "Home Loan", "totalLoan": 500000, "amountPaid": 50000}'
 
 # Delete loan
 curl -X DELETE http://localhost:8090/loan/api/1234567890
@@ -152,8 +222,8 @@ All services return consistent error responses:
 ## Testing Workflow
 
 1. **Create a customer**: POST /api/customer/onboard
-2. **Get full profile**: GET /api/customer/details?mobileNumber={id}
+2. **Get full profile**: GET /api/customer/details/{mobileNumber}
 3. **Update information**: PUT /api/customer/update
-4. **Clean up**: DELETE /api/customer/offboard?mobileNumber={id}
+4. **Clean up**: DELETE /api/customer/offboard/{mobileNumber}
 
 Refer to [resilience-testing.md](resilience-testing.md) for advanced testing scenarios involving service failures and circuit breakers.

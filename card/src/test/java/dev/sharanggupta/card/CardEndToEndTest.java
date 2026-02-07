@@ -1,6 +1,8 @@
 package dev.sharanggupta.card;
 
+import dev.sharanggupta.card.dto.CardCreateRequest;
 import dev.sharanggupta.card.dto.CardDto;
+import dev.sharanggupta.card.dto.CardUpdateRequest;
 import dev.sharanggupta.card.dto.ResponseDto;
 import dev.sharanggupta.card.repository.CardRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -31,10 +33,10 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should create a new card")
     void shouldCreateCard() {
-        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        CardCreateRequest cardRequest = createCardRequest(CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
 
         client.post()
-                .uri(CARD_API_PATH)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(cardRequest)
                 .exchange()
@@ -49,8 +51,8 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should fetch card by mobile number")
     void shouldFetchCardByMobileNumber() {
-        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
-        createCard(cardRequest);
+        CardCreateRequest cardRequest = createCardRequest(CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        createCard(VALID_MOBILE_NUMBER, cardRequest);
 
         client.get()
                 .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
@@ -69,13 +71,12 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should update card details")
     void shouldUpdateCard() {
-        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
-        createCard(cardRequest);
+        CardCreateRequest cardRequest = createCardRequest(CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        createCard(VALID_MOBILE_NUMBER, cardRequest);
 
         CardDto existingCard = fetchCard(VALID_MOBILE_NUMBER);
 
-        CardDto updatedCard = CardDto.builder()
-                .mobileNumber(existingCard.getMobileNumber())
+        CardUpdateRequest updatedCard = CardUpdateRequest.builder()
                 .cardNumber(existingCard.getCardNumber())
                 .cardType(existingCard.getCardType())
                 .totalLimit(200_000)
@@ -83,7 +84,7 @@ class CardEndToEndTest extends BaseEndToEndTest {
                 .build();
 
         client.put()
-                .uri(CARD_API_PATH)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(updatedCard)
                 .exchange()
@@ -98,8 +99,8 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should delete card by mobile number")
     void shouldDeleteCard() {
-        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
-        createCard(cardRequest);
+        CardCreateRequest cardRequest = createCardRequest(CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        createCard(VALID_MOBILE_NUMBER, cardRequest);
 
         client.delete()
                 .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
@@ -115,11 +116,11 @@ class CardEndToEndTest extends BaseEndToEndTest {
     @Test
     @DisplayName("Should reject duplicate card creation")
     void shouldRejectDuplicateCardCreation() {
-        CardDto cardRequest = createCardRequest(VALID_MOBILE_NUMBER, CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
-        createCard(cardRequest);
+        CardCreateRequest cardRequest = createCardRequest(CREDIT_CARD_TYPE, DEFAULT_TOTAL_LIMIT);
+        createCard(VALID_MOBILE_NUMBER, cardRequest);
 
         client.post()
-                .uri(CARD_API_PATH)
+                .uri(CARD_API_PATH + "/" + VALID_MOBILE_NUMBER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(cardRequest)
                 .exchange()
@@ -139,11 +140,11 @@ class CardEndToEndTest extends BaseEndToEndTest {
     // Helpers
     // ----------------------
 
-    private void createCard(CardDto cardDto) {
+    private void createCard(String mobileNumber, CardCreateRequest request) {
         client.post()
-                .uri(CARD_API_PATH)
+                .uri(CARD_API_PATH + "/" + mobileNumber)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(cardDto)
+                .bodyValue(request)
                 .exchange()
                 .expectStatus().isCreated();
     }
@@ -158,12 +159,10 @@ class CardEndToEndTest extends BaseEndToEndTest {
                 .getResponseBody();
     }
 
-    private CardDto createCardRequest(String mobileNumber, String cardType, int totalLimit) {
-        return CardDto.builder()
-                .mobileNumber(mobileNumber)
+    private CardCreateRequest createCardRequest(String cardType, int totalLimit) {
+        return CardCreateRequest.builder()
                 .cardType(cardType)
                 .totalLimit(totalLimit)
-                .amountUsed(0)
                 .build();
     }
 }

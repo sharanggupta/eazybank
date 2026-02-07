@@ -1,15 +1,17 @@
 package dev.sharanggupta.loan.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Builder;
 import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Request DTO for updating a loan.
+ * Allows updating loan number, type, total loan amount, and amount paid.
+ */
 @Getter
-public class LoanDto {
-
-    private final String mobileNumber;
+public class LoanUpdateRequest {
 
     private final String loanNumber;
 
@@ -19,24 +21,18 @@ public class LoanDto {
     private final int totalLoan;
 
     @PositiveOrZero(message = "Amount paid must be zero or positive")
-    private final int amountPaid;
-
-    public int getOutstandingAmount() {
-        return totalLoan - amountPaid;
-    }
+    private final Integer amountPaid;
 
     @JsonCreator
-    @Builder(toBuilder = true) // ✅ enable toBuilder for updates
-    public LoanDto(
-            @JsonProperty("mobileNumber") String mobileNumber,
+    @Builder
+    public LoanUpdateRequest(
             @JsonProperty("loanNumber") String loanNumber,
             @JsonProperty("loanType") String loanType,
             @JsonProperty("totalLoan") int totalLoan,
-            @JsonProperty("amountPaid") int amountPaid) {
-        this.mobileNumber = mobileNumber;
+            @JsonProperty("amountPaid") Integer amountPaid) {
         this.loanNumber = loanNumber;
         this.loanType = loanType;
         this.totalLoan = totalLoan;
-        this.amountPaid = amountPaid;
+        this.amountPaid = amountPaid != null ? amountPaid : 0;
     }
 }

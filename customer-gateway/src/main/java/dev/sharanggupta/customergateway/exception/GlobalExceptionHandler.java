@@ -1,6 +1,7 @@
 package dev.sharanggupta.customergateway.exception;
 
 import dev.sharanggupta.customergateway.dto.ErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,15 @@ public class GlobalExceptionHandler {
                     }
                     return error.getDefaultMessage();
                 })
+                .collect(Collectors.joining(", "));
+
+        return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, errorMessage);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex, ServerWebExchange exchange) {
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getMessage())
                 .collect(Collectors.joining(", "));
 
         return buildErrorResponse(exchange, HttpStatus.BAD_REQUEST, errorMessage);

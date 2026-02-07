@@ -5,35 +5,45 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Gateway route configuration for proxying requests to downstream services.
+ *
+ * Customer-centric nested resource routes (RESTful sub-resources):
+ *   - /api/customer/{mobileNumber}/card   → /card/api/{mobileNumber} (POST, GET, PUT, DELETE)
+ *   - /api/customer/{mobileNumber}/loan   → /loan/api/{mobileNumber} (POST, GET, PUT, DELETE)
+ *   - /account/**                         → account service (direct proxy)
+ *
+ * This provides a unified API where cards and loans are accessed as
+ * sub-resources of a customer identified by mobile number.
+ */
 @Configuration
 public class GatewayRoutesConfig {
-
-    private static final String CARD_ROUTE = "card-route";
-    private static final String LOAN_ROUTE = "loan-route";
-    private static final String CARD_PATH_PATTERN = "/api/customer/{mobileNumber}/card/**";
-    private static final String LOAN_PATH_PATTERN = "/api/customer/{mobileNumber}/loan/**";
-    private static final String CARD_REWRITE_PATTERN = "/api/customer/(?<mobile>[^/]+)/card/(?<segment>/?.*)";
-    private static final String LOAN_REWRITE_PATTERN = "/api/customer/(?<mobile>[^/]+)/loan/(?<segment>/?.*)";
-    private static final String CARD_REWRITE_REPLACEMENT = "/card/api/${mobile}/${segment}";
-    private static final String LOAN_REWRITE_REPLACEMENT = "/loan/api/${mobile}/${segment}";
-    private static final String CARD_CB_NAME = "card_service";
-    private static final String LOAN_CB_NAME = "loan_service";
 
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, ServiceProperties properties) {
         return builder.routes()
-                .route(CARD_ROUTE, r -> r
-                        .path(CARD_PATH_PATTERN)
-                        .filters(f -> f
-                                .rewritePath(CARD_REWRITE_PATTERN, CARD_REWRITE_REPLACEMENT)
-                                .circuitBreaker(config -> config.setName(CARD_CB_NAME)))
+
+                // Card as a sub-resource of customer
+                .route("customer-card-route", r -> r
+                        .path("/api/customer/{mobileNumber}/card/**")
+                        .filters(f -> f.rewritePath(
+                                "/api/customer/(?<mobile>[^/]+)/card(?<segment>/?.*)",
+                                "/card/api/${mobile}${segment}"))
                         .uri(properties.cardUrl()))
-                .route(LOAN_ROUTE, r -> r
-                        .path(LOAN_PATH_PATTERN)
-                        .filters(f -> f
-                                .rewritePath(LOAN_REWRITE_PATTERN, LOAN_REWRITE_REPLACEMENT)
-                                .circuitBreaker(config -> config.setName(LOAN_CB_NAME)))
+
+                // Loan as a sub-resource of customer
+                .route("customer-loan-route", r -> r
+                        .path("/api/customer/{mobileNumber}/loan/**")
+                        .filters(f -> f.rewritePath(
+                                "/api/customer/(?<mobile>[^/]+)/loan(?<segment>/?.*)",
+                                "/loan/api/${mobile}${segment}"))
                         .uri(properties.loanUrl()))
+
+                // Account service proxy (not nested under customer)
+                .route("account-proxy", r -> r
+                        .path("/account/**")
+                        .uri(properties.accountUrl()))
+
                 .build();
     }
 }

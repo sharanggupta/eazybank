@@ -51,9 +51,9 @@ This ensures that customer onboarding either succeeds completely (account + card
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/customer/onboard` | Create new customer with account |
-| `GET` | `/api/customer/details?mobileNumber={mobile}` | Get aggregated customer profile |
+| `GET` | `/api/customer/details/{mobileNumber}` | Get aggregated customer profile |
 | `PUT` | `/api/customer/update` | Update customer information |
-| `DELETE` | `/api/customer/offboard?mobileNumber={mobile}` | Remove customer and all data |
+| `DELETE` | `/api/customer/offboard/{mobileNumber}` | Remove customer and all data |
 
 ### Onboard Customer
 
@@ -79,7 +79,7 @@ Content-Type: application/json
 ### Get Customer Details
 
 ```http
-GET /api/customer/details?mobileNumber=1234567890
+GET /api/customer/details/1234567890
 ```
 
 **Response (200 OK)**:
@@ -141,7 +141,7 @@ Content-Type: application/json
 ### Offboard Customer
 
 ```http
-DELETE /api/customer/offboard?mobileNumber=1234567890
+DELETE /api/customer/offboard/1234567890
 ```
 
 **Response (200 OK)**:
@@ -154,21 +154,28 @@ DELETE /api/customer/offboard?mobileNumber=1234567890
 
 ---
 
-## Proxy Routes
+## Nested Resource Routes
 
-The gateway also proxies requests directly to downstream services:
+Cards and loans are accessed as nested sub-resources of a customer through the gateway:
 
-| Route Pattern | Target Service |
-|---------------|----------------|
-| `/account/**` | Account Service (:8080) |
-| `/card/**` | Card Service (:9000) |
-| `/loan/**` | Loan Service (:8090) |
+| Route Pattern | Target | Operations |
+|---------------|--------|------------|
+| `/api/customer/{mobileNumber}/card` | Card Service | POST, GET, PUT, DELETE |
+| `/api/customer/{mobileNumber}/loan` | Loan Service | POST, GET, PUT, DELETE |
+| `/account/**` | Account Service | Direct proxy |
 
 Example:
 ```bash
-# These are equivalent:
+# Create card for customer via nested resource
+curl -X POST http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
+
+# Fetch card
+curl http://localhost:8000/api/customer/1234567890/card
+
+# Account service via direct proxy
 curl http://localhost:8000/account/api/1234567890
-curl http://localhost:8080/account/api/1234567890  # Direct (local dev only)
 ```
 
 ---
@@ -302,10 +309,10 @@ curl -X POST http://localhost:8000/api/customer/onboard \
   -d '{"name": "Test User", "email": "test@example.com", "mobileNumber": "1234567890"}'
 
 # Get customer details
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
 
 # Offboard customer
-curl -X DELETE "http://localhost:8000/api/customer/offboard?mobileNumber=1234567890"
+curl -X DELETE http://localhost:8000/api/customer/offboard/1234567890
 ```
 
 ### Run Unit Tests

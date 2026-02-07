@@ -1,6 +1,8 @@
 package dev.sharanggupta.card.service;
 
+import dev.sharanggupta.card.dto.CardCreateRequest;
 import dev.sharanggupta.card.dto.CardDto;
+import dev.sharanggupta.card.dto.CardUpdateRequest;
 import dev.sharanggupta.card.entity.Card;
 import dev.sharanggupta.card.exception.CardAlreadyExistsException;
 import dev.sharanggupta.card.exception.ResourceNotFoundException;
@@ -21,17 +23,19 @@ public class CardServiceImpl implements CardService {
     private final Random random = new Random();
 
     @Override
-    public Mono<Void> createCard(CardDto cardDto) {
-        Card card = CardMapper.mapToEntity(cardDto)
-                .toBuilder()
+    public Mono<Void> createCard(String mobileNumber, CardCreateRequest request) {
+        Card card = Card.builder()
+                .mobileNumber(mobileNumber)
                 .cardNumber(generateCardNumber())
+                .cardType(request.getCardType())
+                .totalLimit(request.getTotalLimit())
                 .amountUsed(0)
-                .availableAmount(cardDto.getTotalLimit())
+                .availableAmount(request.getTotalLimit())
                 .build();
 
-        return cardRepository.findByMobileNumber(cardDto.getMobileNumber())
+        return cardRepository.findByMobileNumber(mobileNumber)
                 .flatMap(existing -> Mono.error(new CardAlreadyExistsException(
-                        "Card already exists for mobile number " + cardDto.getMobileNumber()
+                        "Card already exists for mobile number " + mobileNumber
                 )))
                 .switchIfEmpty(cardRepository.save(card))
                 .then();
@@ -44,9 +48,16 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    public Mono<Void> updateCard(CardDto cardDto) {
-        return getCardByMobileNumber(cardDto.getMobileNumber())
-                .map(existing -> CardMapper.updateEntity(cardDto, existing))
+    public Mono<Void> updateCard(String mobileNumber, CardUpdateRequest request) {
+        return getCardByMobileNumber(mobileNumber)
+                .map(existing -> {
+                    existing.setCardNumber(request.getCardNumber());
+                    existing.setCardType(request.getCardType());
+                    existing.setTotalLimit(request.getTotalLimit());
+                    existing.setAmountUsed(request.getAmountUsed());
+                    existing.setAvailableAmount(request.getTotalLimit() - request.getAmountUsed());
+                    return existing;
+                })
                 .flatMap(cardRepository::save)
                 .then();
     }

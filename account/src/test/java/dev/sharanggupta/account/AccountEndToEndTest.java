@@ -1,5 +1,6 @@
 package dev.sharanggupta.account;
 
+import dev.sharanggupta.account.dto.AccountDto;
 import dev.sharanggupta.account.dto.CustomerDto;
 import dev.sharanggupta.account.dto.ResponseDto;
 import dev.sharanggupta.account.repository.AccountRepository;
@@ -77,15 +78,19 @@ class AccountEndToEndTest extends BaseEndToEndTest {
     }
 
     @Test
-    @DisplayName("Should update account details")
+    @DisplayName("Should update account details using mobile number")
     void shouldUpdateAccountDetails() {
+        // Given: A customer account exists
         CustomerDto customerRequest = createCustomerRequest(VALID_NAME, VALID_EMAIL, VALID_MOBILE_NUMBER);
         createAccount(customerRequest);
 
-        CustomerDto existingCustomer = fetchAccount(VALID_MOBILE_NUMBER);
-        CustomerDto updatedRequest = existingCustomer.toBuilder()
+        // When: Update using mobile number (no need to know account number)
+        CustomerDto updateRequest = CustomerDto.builder()
                 .name("Updated Name")
-                .account(existingCustomer.getAccount().toBuilder()
+                .email(VALID_EMAIL)
+                .mobileNumber(VALID_MOBILE_NUMBER)
+                .account(AccountDto.builder()
+                        .accountType("Savings")
                         .branchAddress("456 New Address")
                         .build())
                 .build();
@@ -93,10 +98,11 @@ class AccountEndToEndTest extends BaseEndToEndTest {
         client.put()
                 .uri(API_UPDATE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(updatedRequest), CustomerDto.class)
+                .body(Mono.just(updateRequest), CustomerDto.class)
                 .exchange()
                 .expectStatus().isNoContent();
 
+        // Then: Changes are persisted
         CustomerDto updatedCustomer = fetchAccount(VALID_MOBILE_NUMBER);
         assertThat(updatedCustomer.getName()).isEqualTo("Updated Name");
         assertThat(updatedCustomer.getAccount().getBranchAddress()).isEqualTo("456 New Address");

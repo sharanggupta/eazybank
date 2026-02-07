@@ -19,27 +19,27 @@ The Card Service handles:
 
 ## API Endpoints
 
+All endpoints use mobile number as a path parameter for RESTful resource identification.
+
 ### Create Card
 
 ```http
-POST /card/api
+POST /card/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
   "cardType": "Credit Card",
   "totalLimit": 100000
 }
 ```
 
+Example: `POST /card/api/1234567890`
+
 **Response (201 Created)**:
 ```json
 {
-  "cardNumber": "1234-5678-9012-3456",
-  "cardType": "Credit Card",
-  "totalLimit": 100000,
-  "amountUsed": 0,
-  "availableAmount": 100000
+  "statusCode": "201",
+  "statusMessage": "Card created successfully"
 }
 ```
 
@@ -54,6 +54,7 @@ Example: `GET /card/api/1234567890`
 **Response (200 OK)**:
 ```json
 {
+  "mobileNumber": "1234567890",
   "cardNumber": "1234567890123456",
   "cardType": "Credit Card",
   "totalLimit": 100000,
@@ -67,11 +68,10 @@ Example: `GET /card/api/1234567890`
 ### Update Card
 
 ```http
-PUT /card/api
+PUT /card/api/{mobileNumber}
 Content-Type: application/json
 
 {
-  "mobileNumber": "1234567890",
   "cardNumber": "1234567890123456",
   "cardType": "Credit Card",
   "totalLimit": 200000,
@@ -79,13 +79,9 @@ Content-Type: application/json
 }
 ```
 
-**Response (200 OK)**:
-```json
-{
-  "statusCode": "200",
-  "statusMessage": "Card updated successfully"
-}
-```
+Example: `PUT /card/api/1234567890`
+
+**Response (204 No Content)**
 
 ### Delete Card
 
@@ -95,13 +91,7 @@ DELETE /card/api/{mobileNumber}
 
 Example: `DELETE /card/api/1234567890`
 
-**Response (200 OK)**:
-```json
-{
-  "statusCode": "200",
-  "statusMessage": "Card deleted successfully"
-}
-```
+**Response (204 No Content)**
 
 ---
 
@@ -240,17 +230,17 @@ curl http://localhost:9000/card/actuator/health
 
 ```bash
 # Create card
-curl -X POST http://localhost:9000/card/api \
+curl -X POST http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardType": "Credit Card", "totalLimit": 100000}'
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
 
 # Fetch card
 curl http://localhost:9000/card/api/1234567890
 
 # Update card
-curl -X PUT http://localhost:9000/card/api \
+curl -X PUT http://localhost:9000/card/api/1234567890 \
   -H "Content-Type: application/json" \
-  -d '{"mobileNumber": "1234567890", "cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
+  -d '{"cardNumber": "1234567890123456", "cardType": "Credit Card", "totalLimit": 200000, "amountUsed": 5000}'
 
 # Delete card
 curl -X DELETE http://localhost:9000/card/api/1234567890
@@ -270,7 +260,7 @@ cd card
 When card service fails:
 
 ```bash
-# GET /api/customer/details?mobileNumber=1234567890 on customer-gateway with card service down
+# GET /api/customer/details/1234567890 on customer-gateway with card service down
 {
   "mobileNumber": "1234567890",
   "account": { ... },

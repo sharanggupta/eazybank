@@ -1,7 +1,9 @@
 package dev.sharanggupta.loan.controller;
 
 import dev.sharanggupta.loan.dto.ErrorResponseDto;
+import dev.sharanggupta.loan.dto.LoanCreateRequest;
 import dev.sharanggupta.loan.dto.LoanDto;
+import dev.sharanggupta.loan.dto.LoanUpdateRequest;
 import dev.sharanggupta.loan.dto.ResponseDto;
 import dev.sharanggupta.loan.service.LoanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,11 +35,14 @@ public class LoanController {
 
     private final LoanService loanService;
 
-    @Operation(summary = "Create loan", description = "REST API to create a new loan")
+    @Operation(summary = "Create loan", description = "REST API to create a new loan for a customer")
     @ApiResponse(responseCode = "201", description = "Loan created successfully")
-    @PostMapping
-    public Mono<ResponseEntity<ResponseDto>> createLoan(@Valid @RequestBody LoanDto loanDto) {
-        return loanService.createLoan(loanDto)
+    @PostMapping("/{mobileNumber}")
+    public Mono<ResponseEntity<ResponseDto>> createLoan(
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            String mobileNumber,
+            @Valid @RequestBody LoanCreateRequest request) {
+        return loanService.createLoan(mobileNumber, request)
                 .thenReturn(ResponseEntity.status(HttpStatus.CREATED)
                         .body(new ResponseDto(STATUS_201, MESSAGE_201)));
     }
@@ -58,9 +63,12 @@ public class LoanController {
     @ApiResponse(responseCode = "204", description = "Loan updated successfully")
     @ApiResponse(responseCode = "404", description = "Loan not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
-    @PutMapping
-    public Mono<ResponseEntity<Void>> updateLoan(@Valid @RequestBody LoanDto loanDto) {
-        return loanService.updateLoan(loanDto)
+    @PutMapping("/{mobileNumber}")
+    public Mono<ResponseEntity<Void>> updateLoan(
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            String mobileNumber,
+            @Valid @RequestBody LoanUpdateRequest request) {
+        return loanService.updateLoan(mobileNumber, request)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 

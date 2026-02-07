@@ -1,6 +1,8 @@
 package dev.sharanggupta.loan.service;
 
+import dev.sharanggupta.loan.dto.LoanCreateRequest;
 import dev.sharanggupta.loan.dto.LoanDto;
+import dev.sharanggupta.loan.dto.LoanUpdateRequest;
 import dev.sharanggupta.loan.entity.Loan;
 import dev.sharanggupta.loan.exception.LoanAlreadyExistsException;
 import dev.sharanggupta.loan.exception.ResourceNotFoundException;
@@ -21,16 +23,18 @@ public class LoanServiceImpl implements LoanService {
     private final Random random = new Random();
 
     @Override
-    public Mono<Void> createLoan(LoanDto loanDto) {
-        Loan loan = LoanMapper.mapToEntity(loanDto)
-                .toBuilder()
+    public Mono<Void> createLoan(String mobileNumber, LoanCreateRequest request) {
+        Loan loan = Loan.builder()
+                .mobileNumber(mobileNumber)
                 .loanNumber(generateLoanNumber())
+                .loanType(request.getLoanType())
+                .totalLoan(request.getTotalLoan())
                 .amountPaid(0)
                 .build();
 
-        return loanRepository.findByMobileNumber(loanDto.getMobileNumber())
+        return loanRepository.findByMobileNumber(mobileNumber)
                 .flatMap(existing -> Mono.error(new LoanAlreadyExistsException(
-                        "Loan already exists for mobile number " + loanDto.getMobileNumber()
+                        "Loan already exists for mobile number " + mobileNumber
                 )))
                 .switchIfEmpty(loanRepository.save(loan))
                 .then();
@@ -43,9 +47,15 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public Mono<Void> updateLoan(LoanDto loanDto) {
-        return getLoanByMobileNumber(loanDto.getMobileNumber())
-                .map(existing -> LoanMapper.updateEntity(loanDto, existing))
+    public Mono<Void> updateLoan(String mobileNumber, LoanUpdateRequest request) {
+        return getLoanByMobileNumber(mobileNumber)
+                .map(existing -> {
+                    existing.setLoanNumber(request.getLoanNumber());
+                    existing.setLoanType(request.getLoanType());
+                    existing.setTotalLoan(request.getTotalLoan());
+                    existing.setAmountPaid(request.getAmountPaid());
+                    return existing;
+                })
                 .flatMap(loanRepository::save)
                 .then();
     }

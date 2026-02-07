@@ -1,6 +1,8 @@
 package dev.sharanggupta.card.controller;
 
+import dev.sharanggupta.card.dto.CardCreateRequest;
 import dev.sharanggupta.card.dto.CardDto;
+import dev.sharanggupta.card.dto.CardUpdateRequest;
 import dev.sharanggupta.card.dto.ErrorResponseDto;
 import dev.sharanggupta.card.dto.ResponseDto;
 import dev.sharanggupta.card.service.CardService;
@@ -33,13 +35,15 @@ public class CardController {
 
     private final CardService cardService;
 
-    @Operation(summary = "Create card", description = "REST API to create a new card")
+    @Operation(summary = "Create card", description = "REST API to create a new card for a customer")
     @ApiResponse(responseCode = "201", description = "Card created successfully")
-    @PostMapping
+    @PostMapping("/{mobileNumber}")
     public Mono<ResponseEntity<ResponseDto>> createCard(
-            @Valid @RequestBody CardDto cardDto) {
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            String mobileNumber,
+            @Valid @RequestBody CardCreateRequest request) {
 
-        return cardService.createCard(cardDto)
+        return cardService.createCard(mobileNumber, request)
                 .thenReturn(
                         ResponseEntity.status(HttpStatus.CREATED)
                                 .body(new ResponseDto(STATUS_201, MESSAGE_201))
@@ -68,9 +72,12 @@ public class CardController {
     @ApiResponse(responseCode = "204", description = "Card updated successfully")
     @ApiResponse(responseCode = "404", description = "Card not found",
             content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
-    @PutMapping
-    public Mono<ResponseEntity<Void>> updateCard(@Valid @RequestBody CardDto cardDto) {
-        return cardService.updateCard(cardDto)
+    @PutMapping("/{mobileNumber}")
+    public Mono<ResponseEntity<Void>> updateCard(
+            @PathVariable @Pattern(regexp = MOBILE_NUMBER_PATTERN, message = MOBILE_NUMBER_MESSAGE)
+            String mobileNumber,
+            @Valid @RequestBody CardUpdateRequest request) {
+        return cardService.updateCard(mobileNumber, request)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 

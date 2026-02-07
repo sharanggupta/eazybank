@@ -71,19 +71,40 @@ This makes circuit breaker behavior immediately visible for testing.
 
 The gateway prevents all write operations when any circuit breaker is OPEN or HALF_OPEN.
 
-### Step 1: Verify Healthy State
+### Step 1: Create a Customer with All Products
+
+First, create a customer with account, card, and loan so we can observe graceful degradation.
+All requests go through the gateway (port 8000):
 
 ```bash
-# All services up, writes should succeed
+# Create customer (creates account automatically)
 curl -X POST http://localhost:8000/api/customer/onboard \
   -H "Content-Type: application/json" \
   -d '{"name": "John Doe", "email": "john@example.com", "mobileNumber": "1234567890"}'
 # Expected: 201 Created
+
+# Create a card for the customer (nested resource)
+curl -X POST http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
+# Expected: 201 Created
+
+# Create a loan for the customer (nested resource)
+curl -X POST http://localhost:8000/api/customer/1234567890/loan \
+  -H "Content-Type: application/json" \
+  -d '{"loanType": "Home Loan", "totalLoan": 500000}'
+# Expected: 201 Created
+
+# Verify full profile (should show account, card, AND loan)
+curl http://localhost:8000/api/customer/details/1234567890
+# Expected: JSON with account, card, and loan sections
 ```
 
 ### Step 2: Stop a Service (Induce Failure)
 
 ```bash
+# Run from deploy/dev directory
+cd deploy/dev
 docker compose stop card
 ```
 
@@ -93,8 +114,8 @@ Make a few read requests to trigger the circuit breaker:
 
 ```bash
 # Each request to card service fails, contributing to circuit breaker
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
+curl http://localhost:8000/api/customer/details/1234567890
 ```
 
 ### Step 4: Verify Circuit Breaker State
@@ -109,11 +130,11 @@ curl http://localhost:8000/actuator/circuitbreakers
 Reads continue but omit the failed service's data:
 
 ```bash
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
 # Expected: 200 OK with graceful degradation
 ```
 
-**Expected response** (card field completely missing):
+**Expected response** (card field completely missing, but loan still present):
 ```json
 {
   "name": "John Doe",
@@ -123,6 +144,13 @@ curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
     "accountNumber": "00010012345678901",
     "accountType": "Savings",
     "branchAddress": "123 Main Street, New York"
+  },
+  "loan": {
+    "loanNumber": "123456789012",
+    "loanType": "Home Loan",
+    "totalLoan": 500000,
+    "amountPaid": 0,
+    "outstandingAmount": 500000
   }
 }
 ```
@@ -153,13 +181,16 @@ curl -X POST http://localhost:8000/api/customer/onboard \
 ### Step 7: Recovery
 
 ```bash
-# Bring service back online
+# Bring service back online (run from deploy/dev directory)
 docker compose start card
 sleep 10
 
 # Make a READ request (helps circuit breaker transition)
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
-# Expected: 200 OK (card data now present)
+curl http://localhost:8000/api/customer/details/1234567890
+# Expected: 200 OK with card data now present again!
+
+# Verify full profile restored (account, card, AND loan)
+# Response should now include the card section that was missing during degradation
 
 sleep 3
 
@@ -181,16 +212,25 @@ curl -X POST http://localhost:8000/api/customer/onboard \
 ### Card Service Circuit Breaker
 
 ```bash
+# First, ensure customer has a card (nested resource)
+curl -X POST http://localhost:8000/api/customer/1234567890/card \
+  -H "Content-Type: application/json" \
+  -d '{"cardType": "Credit Card", "totalLimit": 100000}'
+
+# Verify card appears in profile
+curl http://localhost:8000/api/customer/details/1234567890
+# Response: should include card section
+
 # Stop card service
 docker compose stop card
 
 # Trigger circuit breaker with read requests
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
+curl http://localhost:8000/api/customer/details/1234567890
 
 # Reads work but degrade (no card data)
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
-# Response: 200 OK - card field missing
+curl http://localhost:8000/api/customer/details/1234567890
+# Response: 200 OK - card field missing, account/loan still present
 
 # Writes blocked
 curl -X POST http://localhost:8000/api/customer/onboard \
@@ -201,7 +241,8 @@ curl -X POST http://localhost:8000/api/customer/onboard \
 # Recovery
 docker compose start card
 sleep 10
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
+# Response: card data restored!
 sleep 3
 
 # Writes work again
@@ -220,7 +261,7 @@ Account service is **critical** - no graceful degradation possible. Both reads a
 docker compose stop account
 
 # Reads fail (account is required for all operations)
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
 # Response: 503 Service Unavailable
 
 # Writes also fail
@@ -232,7 +273,7 @@ curl -X POST http://localhost:8000/api/customer/onboard \
 # Recovery
 docker compose start account
 sleep 10
-curl "http://localhost:8000/api/customer/details?mobileNumber=1234567890"
+curl http://localhost:8000/api/customer/details/1234567890
 # Response: 200 OK
 ```
 

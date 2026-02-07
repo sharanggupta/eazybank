@@ -46,9 +46,9 @@ EazyBank consists of four microservices. The **Gateway** is the single entry poi
 
 The gateway exposes:
 - `/api/customer` — Customer lifecycle (onboard, fetch details, update profile, offboard)
-- `/api/customer/{mobileNumber}/card` — Card management (issue, fetch, update, cancel)
-- `/api/customer/{mobileNumber}/loan` — Loan management (apply, fetch, update, close)
-- `/account/**`, `/card/**`, `/loan/**` — Proxied routes to backend services
+- `/api/customer/{mobileNumber}/card` — Card management (create, fetch, update, delete)
+- `/api/customer/{mobileNumber}/loan` — Loan management (create, fetch, update, delete)
+- `/account/**` — Proxied route to account service
 
 ## Tech Stack
 

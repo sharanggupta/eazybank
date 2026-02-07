@@ -38,6 +38,7 @@ resilience4j:
         ignore-exceptions:
           - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
           - org.springframework.web.reactive.function.client.WebClientResponseException$NotFound
+          - dev.sharanggupta.customergateway.exception.ResourceNotFoundException
     instances:
       account_service:
         base-config: default
