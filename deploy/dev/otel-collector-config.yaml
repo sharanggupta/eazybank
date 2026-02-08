@@ -12,14 +12,10 @@ processors:
   batch:
     send_batch_size: 100
     timeout: 10s
-  attributes:
-    actions:
-      - key: service.name
-        action: upsert
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, attributes]
+      processors: [batch]
       exporters: [logging]

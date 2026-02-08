@@ -242,9 +242,132 @@ http_server_requests_seconds_sum{...} 0.125
 
 ---
 
-## PHASE 2: Metrics with Micrometer + Prometheus
+## PHASE 2: Structured JSON Logging with Trace Correlation
 
-**Status**: ⏳ PENDING
+**Status**: ✅ COMPLETE
+
+Services now emit structured JSON logs with automatic trace ID/span ID correlation.
+
+---
+
+## PHASE 3: Distributed Tracing with OpenTelemetry
+
+**Status**: ✅ COMPLETE
+
+Services auto-instrument and send OTLP traces to OpenTelemetry Collector.
+
+---
+
+## PHASE 4: Environment-Specific Configuration
+
+**Status**: ✅ COMPLETE
+
+All observability settings (sampling probability, endpoints) defined in Helm values files for dev/staging/prod.
+
+---
+
+## PHASE 5: Complete Local Observability Stack
+
+**Status**: ⏳ IN PROGRESS
+
+Deploy complete observability infrastructure locally and wire services together.
+
+### What PHASE 5 Provides
+
+**Updated docker-compose.yml:**
+- Adds OTEL_EXPORTER_OTLP_ENDPOINT to all 4 services (so they can reach OTel Collector)
+- Manages complete observability stack as services
+- Proper service dependencies
+
+**New Configuration Files:**
+
+1. **otel-collector-config.yaml** - OpenTelemetry Collector
+   - Receives OTLP traces on port 4318
+   - Logs traces for debugging
+   - Can be extended to send to Tempo/Jaeger
+
+2. **prometheus.yml** - Prometheus metrics scraper
+   - Scrapes `/actuator/prometheus` from all 4 services every 30s
+   - Stores time-series metrics in local storage
+
+3. **loki-config.yaml** - Loki log aggregation
+   - Receives JSON logs from Alloy
+   - 168-hour retention
+   - BoltDB + filesystem backend
+
+4. **alloy-config.alloy** - Grafana Alloy log collector
+   - Discovers EazyBank Docker containers
+   - Tails container logs
+   - Parses JSON logs
+   - Sends to Loki with proper labels (level, service, traceId, spanId)
+
+**Infrastructure Services:**
+```
+otel-collector (port 4318)     ← receives OTLP traces from services
+  ↓
+prometheus (port 9090)         ← scrapes /actuator/prometheus
+  ↓
+grafana (port 3000)            ← visualizes metrics, logs, traces
+  ↑
+loki (port 3100)               ← aggregates logs from Alloy
+  ↑
+alloy (port 12345)             ← collects Docker container logs
+```
+
+### How the Data Flows
+
+**Traces:**
+```
+Service → OTel SDK → OTLP HTTP → OTel Collector:4318 → (Logs to stdout)
+```
+
+**Metrics:**
+```
+Service → Micrometer → /actuator/prometheus → Prometheus scraper → Prometheus DB → Grafana
+```
+
+**Logs:**
+```
+Service → stdout → Docker daemon → Alloy → Loki → Grafana
+```
+
+### Local Testing PHASE 5
+
+After deployment:
+
+1. **Check all services are running:**
+   ```bash
+   docker compose ps
+   ```
+
+2. **Make requests to generate traces:**
+   ```bash
+   curl http://localhost:8080/account/actuator/health
+   ```
+
+3. **Verify OTel Collector received traces:**
+   ```bash
+   docker logs eazybank-otel-collector | grep ResourceSpans
+   ```
+
+4. **Check Prometheus targets:**
+   - Visit http://localhost:9090/targets
+   - All 4 services should show as UP
+
+5. **View metrics in Grafana:**
+   - Visit http://localhost:3000 (admin/admin)
+   - Add Prometheus as data source
+   - Create dashboards for JVM, HTTP, circuit breaker metrics
+
+6. **View logs in Loki:**
+   - In Grafana, add Loki data source
+   - Query logs: `{service="account"}`
+   - Filter by level, trace_id, etc.
+
+7. **Find traces by ID across services:**
+   - Make request: `curl http://localhost:8000/api/customer/details/1234567890`
+   - Extract traceId from any service log
+   - Search all services: `{traceId="4c5c3f2e-..."}`
 
 ---
 
