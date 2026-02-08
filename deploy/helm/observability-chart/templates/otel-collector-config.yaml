@@ -1,0 +1,42 @@
+{{- if and .Values.enabled .Values.otelCollector.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:{{ .Values.otelCollector.service.ports.otlpHttp }}
+
+    processors:
+      batch:
+        send_batch_size: {{ .Values.otelCollector.config.processors.batch.send_batch_size }}
+        timeout: {{ .Values.otelCollector.config.processors.batch.timeout }}
+
+    exporters:
+      logging:
+        loglevel: {{ .Values.otelCollector.config.exporters.logging.loglevel }}
+
+      otlphttp/tempo:
+        endpoint: http://tempo:{{ .Values.tempo.service.ports.otlp }}/v1/traces
+
+      prometheus:
+        endpoint: "0.0.0.0:{{ .Values.otelCollector.service.ports.prometheus }}"
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging, otlphttp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]
+{{- end }}

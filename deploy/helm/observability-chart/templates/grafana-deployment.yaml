@@ -1,0 +1,68 @@
+{{- if and .Values.enabled .Values.grafana.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+    app: grafana
+spec:
+  replicas: {{ .Values.grafana.replicas }}
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        {{- include "observability.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: grafana
+      containers:
+      - name: grafana
+        image: "{{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}"
+        imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: {{ .Values.grafana.admin.username | quote }}
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-admin
+              key: password
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_PATHS_PROVISIONING
+          value: /etc/grafana/provisioning
+        volumeMounts:
+        - name: provisioning
+          mountPath: /etc/grafana/provisioning
+        - name: storage
+          mountPath: /var/lib/grafana
+        resources:
+          {{- toYaml .Values.grafana.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: provisioning
+        configMap:
+          name: grafana-provisioning
+      - name: storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+{{- end }}
