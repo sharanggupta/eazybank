@@ -32,34 +32,35 @@ Reference guide for deploying EazyBank microservices to Kubernetes using Helm.
 
 ```
 deploy/helm/
-├── service-chart/                      # Reusable Helm chart
-│   ├── Chart.yaml                      # Chart metadata
-│   ├── values.yaml                     # Default value schema
-│   └── templates/                      # Kubernetes manifests
-│       ├── deployment.yaml
+├── service-chart/                      # Reusable Helm chart for all services
+│   ├── Chart.yaml
+│   ├── values.yaml                     # Default value schema + observability config
+│   └── templates/
+│       ├── deployment.yaml             # Includes OTEL environment variables
 │       ├── service.yaml
 │       ├── configmap.yaml
 │       ├── secret.yaml
 │       ├── ingress.yaml
 │       ├── hpa.yaml
 │       └── postgresql/
-│           ├── statefulset.yaml
-│           ├── service.yaml
-│           └── secret.yaml
 │
-└── services/                           # Per-service configurations
+├── observability-chart/                # Separate: Prometheus, Grafana, Loki, Tempo, OTel Collector, Alloy
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   ├── templates/
+│   └── environments/
+│       ├── dev/
+│       ├── staging/
+│       └── prod/
+│
+└── services/                           # Per-service environment-specific configs
     ├── account/
-    │   ├── values.yaml                 # Service identity
-    │   └── environments/
-    │       ├── dev/
-    │       ├── staging/
-    │       └── prod/
-    │           ├── app-values.yaml     # App config
-    │           └── k8s-values.yaml     # K8s resources
     ├── card/
     ├── loan/
     └── customer-gateway/
 ```
+
+**Note**: Observability stack (`observability-chart/`) is deployed separately to `otel` namespace. Services automatically connect via environment variables set from `app.observability` Helm values.
 
 ## Helm Values (3-Level Inheritance)
 
@@ -198,6 +199,30 @@ helm upgrade --install customer-gateway ./deploy/helm/service-chart \
 kubectl get pods -n eazybank-staging
 kubectl get svc -n eazybank-staging
 ```
+
+## Observability
+
+Services include OpenTelemetry instrumentation. Configure via Helm:
+
+```yaml
+app:
+  observability:
+    enabled: true
+    samplingRate: "0.1"        # 10% tracing
+    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
+```
+
+The observability stack (Prometheus, Grafana, Loki, Tempo, OTel Collector) is deployed separately in the `otel` namespace:
+
+```bash
+helm install observability ./deploy/helm/observability-chart \
+  -n otel --create-namespace \
+  -f deploy/helm/observability-chart/environments/staging/values.yaml
+```
+
+Access Grafana on NodePort 30030 (dev/staging) or via Ingress (prod).
+
+---
 
 ## Production Considerations
 
