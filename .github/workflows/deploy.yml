@@ -173,6 +173,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_STAGING }}" \
             -f ./deploy/helm/services/account/values.yaml \
             -f ./deploy/helm/services/account/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/account/environments/staging/k8s-values.yaml
@@ -186,6 +187,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_STAGING }}" \
             -f ./deploy/helm/services/card/values.yaml \
             -f ./deploy/helm/services/card/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/card/environments/staging/k8s-values.yaml
@@ -199,6 +201,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_STAGING }}" \
             -f ./deploy/helm/services/loan/values.yaml \
             -f ./deploy/helm/services/loan/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/staging/k8s-values.yaml
@@ -210,6 +213,7 @@ jobs:
             --wait --timeout 5m \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/customer-gateway \
             --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_STAGING }}" \
             -f ./deploy/helm/services/customer-gateway/values.yaml \
             -f ./deploy/helm/services/customer-gateway/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/customer-gateway/environments/staging/k8s-values.yaml
@@ -309,6 +313,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_PROD }}" \
             -f ./deploy/helm/services/account/values.yaml \
             -f ./deploy/helm/services/account/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/account/environments/prod/k8s-values.yaml
@@ -322,6 +327,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_PROD }}" \
             -f ./deploy/helm/services/card/values.yaml \
             -f ./deploy/helm/services/card/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/card/environments/prod/k8s-values.yaml
@@ -335,6 +341,7 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.DB_PASSWORD_PROD }}" \
             --set postgresql.credentials.password="${{ secrets.DB_PASSWORD_PROD }}" \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_PROD }}" \
             -f ./deploy/helm/services/loan/values.yaml \
             -f ./deploy/helm/services/loan/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/loan/environments/prod/k8s-values.yaml
@@ -346,6 +353,7 @@ jobs:
             --wait --timeout 5m \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/customer-gateway \
             --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_PROD }}" \
             -f ./deploy/helm/services/customer-gateway/values.yaml \
             -f ./deploy/helm/services/customer-gateway/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/customer-gateway/environments/prod/k8s-values.yaml
