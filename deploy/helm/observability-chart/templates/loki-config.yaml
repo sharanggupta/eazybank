@@ -1,0 +1,62 @@
+{{- if .Values.loki.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observability-chart.fullname" . }}-loki-config
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
+data:
+  loki-config.yaml: |
+    auth_enabled: false
+
+    ingester:
+      chunk_idle_period: 3m
+      max_chunk_age: 1h
+      wal:
+        enabled: false
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+
+    server:
+      http_listen_port: 3100
+
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /loki/boltdb-shipper-active
+        cache_location: /loki/boltdb-shipper-cache
+        shared_store: filesystem
+      filesystem:
+        directory: /loki/chunks
+
+    compactor:
+      working_directory: /loki/compactor
+      compaction_interval: 10m
+      shared_store: filesystem
+
+    distributor:
+      ring:
+        kvstore:
+          store: inmemory
+
+    querier:
+      max_concurrent: 20
+{{- end }}

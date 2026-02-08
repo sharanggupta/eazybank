@@ -2,22 +2,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "otel-collector-name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "observability-chart.fullname" . }}-otel-collector
+  namespace: {{ .Release.Namespace | quote }}
   labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
     app: otel-collector
-    release: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.otelCollector.replicas }}
   selector:
     matchLabels:
       app: otel-collector
-      release: {{ .Release.Name }}
+      {{- include "observability-chart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
         app: otel-collector
-        release: {{ .Release.Name }}
+        {{- include "observability-chart.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "observability-sa-name" . }}
       containers:
@@ -47,16 +47,16 @@ spec:
       volumes:
       - name: otel-config
         configMap:
-          name: {{ include "otel-config-name" . }}
+          name: {{ include "observability-chart.fullname" . }}-otel-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "otel-collector-name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "observability-chart.fullname" . }}-otel-collector
+  namespace: {{ .Release.Namespace | quote }}
   labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
     app: otel-collector
-    release: {{ .Release.Name }}
 spec:
   type: ClusterIP
   ports:
@@ -70,13 +70,13 @@ spec:
     protocol: TCP
   selector:
     app: otel-collector
-    release: {{ .Release.Name }}
+    {{- include "observability-chart.selectorLabels" . | nindent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "otel-config-name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "observability-chart.fullname" . }}-otel-config
+  namespace: {{ .Release.Namespace | quote }}
 data:
   config.yaml: |
     receivers:
@@ -104,12 +104,4 @@ data:
           receivers: [otlp]
           processors: [memory_limiter, batch]
           exporters: [prometheus]
-{{- end }}
-
-{{- define "otel-collector-name" -}}
-{{ include "observability-name" . }}-otel-collector
-{{- end }}
-
-{{- define "otel-config-name" -}}
-{{ include "observability-name" . }}-otel-config
 {{- end }}

@@ -167,17 +167,17 @@ jobs:
 
       - name: Deploy observability stack to staging
         run: |
-          # Add Helm chart repositories
+          # Add Helm chart repositories for kube-prometheus-stack dependency
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
 
-          # Update observability chart dependencies
+          # Update observability chart dependencies (fetches kube-prometheus-stack)
           helm dependency update ./deploy/helm/observability-chart
 
-          # Deploy observability stack
+          # Deploy observability stack with Prometheus, Grafana, Loki, OTEL, Alloy
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace observability \
+            --create-namespace \
             --wait --timeout 10m \
             -f ./deploy/helm/observability-chart/values.yaml \
             -f ./deploy/helm/observability-chart/environments/staging/values.yaml
@@ -320,17 +320,17 @@ jobs:
 
       - name: Deploy observability stack to production
         run: |
-          # Add Helm chart repositories
+          # Add Helm chart repositories for kube-prometheus-stack dependency
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
 
-          # Update observability chart dependencies
+          # Update observability chart dependencies (fetches kube-prometheus-stack)
           helm dependency update ./deploy/helm/observability-chart
 
-          # Deploy observability stack
+          # Deploy observability stack with production values (HA, TLS, larger storage)
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace observability \
+            --create-namespace \
             --wait --timeout 10m \
             -f ./deploy/helm/observability-chart/values.yaml \
             -f ./deploy/helm/observability-chart/environments/prod/values.yaml

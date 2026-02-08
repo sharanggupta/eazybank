@@ -1,0 +1,23 @@
+{{- if .Values.loki.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "observability-chart.fullname" . }}-loki
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
+    app: loki
+spec:
+  type: {{ .Values.loki.service.type }}
+  ports:
+  - port: {{ .Values.loki.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+    {{- if eq .Values.loki.service.type "NodePort" }}
+    nodePort: {{ .Values.loki.service.nodePort }}
+    {{- end }}
+  selector:
+    app: loki
+    {{- include "observability-chart.selectorLabels" . | nindent 4 }}
+{{- end }}

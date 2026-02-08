@@ -1,0 +1,21 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observability-chart.fullname" . }}-grafana-provisioning
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'EazyBank Dashboards'
+        orgId: 1
+        folder: 'EazyBank'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/eazybank
+{{- end }}

@@ -1,0 +1,24 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observability-chart.fullname" . }}-grafana-datasources
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "observability-chart.labels" . | nindent 4 }}
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://{{ include "observability-chart.fullname" . }}-kube-prometheus-prometheus:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 30s
+      - name: Loki
+        type: loki
+        url: http://{{ include "observability-chart.fullname" . }}-loki:3100
+        access: proxy
+{{- end }}

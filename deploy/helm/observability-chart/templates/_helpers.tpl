@@ -72,3 +72,10 @@ Alias for consistency - observability-chart.labels
 {{- define "observability-chart.labels" -}}
 {{- include "observability-labels" . }}
 {{- end }}
+
+{{/*
+Alias for consistency - observability-chart.selectorLabels
+*/}}
+{{- define "observability-chart.selectorLabels" -}}
+{{- include "observability-selectorLabels" . }}
+{{- end }}
