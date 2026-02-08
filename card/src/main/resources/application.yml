@@ -16,7 +16,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,conditions
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
 app:
   build:
     version: 1.0.0
