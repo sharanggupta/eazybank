@@ -6,9 +6,11 @@ app:
     profiles: staging
   build:
     version: 0.0.1
+  observability:
+    enabled: true
+    samplingRate: "0.1"
+    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
   env:
     SERVICES_ACCOUNT_URL: "http://account:8080"
     SERVICES_CARD_URL: "http://card:9000"
     SERVICES_LOAN_URL: "http://loan:8090"
-    MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "0.1"
-    MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"

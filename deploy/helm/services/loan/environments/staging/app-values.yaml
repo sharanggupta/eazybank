@@ -15,9 +15,10 @@ app:
     contactEmail: staging-support@loan.service.local
     contactNumber: "+1-555-0300"
     message: Welcome to EazyBank Loan Service (Staging)
-  env:
-    MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "0.1"
-    MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+  observability:
+    enabled: true
+    samplingRate: "0.1"
+    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
 
 postgresql:
   credentials:
