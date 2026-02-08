@@ -1,9 +1,9 @@
 package dev.sharanggupta.customergateway.client;
 
+import dev.sharanggupta.customergateway.config.ServiceProperties;
 import dev.sharanggupta.customergateway.dto.CustomerAccount;
 import dev.sharanggupta.customergateway.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,8 +19,8 @@ public class AccountServiceClient {
 
     private final WebClient webClient;
 
-    public AccountServiceClient(@Qualifier("account") WebClient webClient) {
-        this.webClient = webClient;
+    public AccountServiceClient(WebClient.Builder builder, ServiceProperties props) {
+        this.webClient = builder.baseUrl(props.accountUrl()).build();
     }
 
     public Mono<Void> createAccount(CustomerAccount customerAccount) {

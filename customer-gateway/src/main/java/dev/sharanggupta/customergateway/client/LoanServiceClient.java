@@ -1,8 +1,8 @@
 package dev.sharanggupta.customergateway.client;
 
+import dev.sharanggupta.customergateway.config.ServiceProperties;
 import dev.sharanggupta.customergateway.dto.LoanInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -16,8 +16,8 @@ public class LoanServiceClient {
 
     private final WebClient webClient;
 
-    public LoanServiceClient(@Qualifier("loan") WebClient webClient) {
-        this.webClient = webClient;
+    public LoanServiceClient(WebClient.Builder builder, ServiceProperties props) {
+        this.webClient = builder.baseUrl(props.loanUrl()).build();
     }
 
     public Mono<LoanInfo> fetchLoan(String mobileNumber) {

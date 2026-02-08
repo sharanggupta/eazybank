@@ -1,8 +1,8 @@
 package dev.sharanggupta.customergateway.client;
 
+import dev.sharanggupta.customergateway.config.ServiceProperties;
 import dev.sharanggupta.customergateway.dto.CardInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -16,8 +16,8 @@ public class CardServiceClient {
 
     private final WebClient webClient;
 
-    public CardServiceClient(@Qualifier("card") WebClient webClient) {
-        this.webClient = webClient;
+    public CardServiceClient(WebClient.Builder builder, ServiceProperties props) {
+        this.webClient = builder.baseUrl(props.cardUrl()).build();
     }
 
     public Mono<CardInfo> fetchCard(String mobileNumber) {
