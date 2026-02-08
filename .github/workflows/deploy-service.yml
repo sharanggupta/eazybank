@@ -246,7 +246,6 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.db_password }}" \
             --set postgresql.credentials.password="${{ secrets.db_password }}" \
-            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_STAGING }}" \
             -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/app-values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/staging/k8s-values.yaml
@@ -335,7 +334,6 @@ jobs:
             --set image.tag=${{ needs.build.outputs.image_tag }} \
             --set app.datasource.password="${{ secrets.db_password_prod }}" \
             --set postgresql.credentials.password="${{ secrets.db_password_prod }}" \
-            --set app.observability.otlpEndpoint="${{ secrets.OTEL_ENDPOINT_PROD }}" \
             -f ./deploy/helm/services/${{ inputs.service }}/values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/app-values.yaml \
             -f ./deploy/helm/services/${{ inputs.service }}/environments/prod/k8s-values.yaml
