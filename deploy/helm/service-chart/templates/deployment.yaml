@@ -53,6 +53,13 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          env:
+          {{- if .Values.app.observability.enabled }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.app.observability.otlpEndpoint | quote }}
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: {{ .Values.app.observability.samplingRate | quote }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "eazybank-service.fullname" . }}
