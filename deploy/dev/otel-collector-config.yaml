@@ -7,6 +7,11 @@ receivers:
 exporters:
   logging:
     loglevel: debug
+  otlp:
+    client:
+      endpoint: tempo:4317
+      tls:
+        insecure: true
 
 processors:
   batch:
@@ -18,4 +23,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging]
+      exporters: [logging, otlp]
