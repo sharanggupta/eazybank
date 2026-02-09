@@ -1,0 +1,9 @@
+{{- if and .Values.enabled .Values.otelCollector.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+{{- end }}

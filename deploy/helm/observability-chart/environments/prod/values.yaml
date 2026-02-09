@@ -1,0 +1,36 @@
+# Production environment values for observability stack
+
+prometheus:
+  replicas: 2
+  storage:
+    size: 50Gi
+    retentionDays: 30
+
+grafana:
+  admin:
+    password: prod-grafana-password  # MUST be overridden via GitHub secret
+  service:
+    type: ClusterIP  # Use Ingress instead of NodePort
+  ingress:
+    enabled: true
+    host: grafana.eazybank.com
+    tls:
+      - secretName: grafana-tls
+
+loki:
+  replicas: 2
+  storage:
+    size: 100Gi
+    retentionDays: 30
+
+tempo:
+  replicas: 2
+  storage:
+    size: 50Gi
+    retentionDays: 14
+
+otelCollector:
+  replicas: 3
+
+alloy:
+  deploymentType: daemonset

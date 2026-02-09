@@ -1,0 +1,45 @@
+{{- if and .Values.enabled .Values.tempo.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  tempo-config.yaml: |
+    server:
+      http_listen_port: 3100
+      log_level: info
+
+    distributor:
+      rate_limit_bytes: 10000000
+
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /var/tempo/traces
+        wal:
+          path: /var/tempo/wal
+        blocklist_poll: 15m
+
+    retention:
+      enabled: true
+      duration: {{ mul .Values.tempo.storage.retentionDays 24 }}h
+
+    metrics_generator:
+      registry:
+        enabled: true
+      storage:
+        path: /var/tempo/metrics-generator
+
+    memberlist:
+      node_name: '{{ "$(HOSTNAME)" }}'
+{{- end }}

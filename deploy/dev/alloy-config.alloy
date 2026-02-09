@@ -1,0 +1,61 @@
+// Discover Docker containers by name pattern
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "name"
+    values = ["eazybank"]
+  }
+}
+
+// Scrape logs from EazyBank containers
+loki.source.docker "eazybank" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.parse_json.receiver]
+}
+
+// Parse JSON logs and extract labels
+loki.process "parse_json" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.json {
+    expressions = {
+      level      = "level",
+      service    = "service",
+      timestamp  = "timestamp",
+      message    = "message",
+      logger     = "logger",
+      thread     = "thread",
+      trace_id   = "traceId",
+      span_id    = "spanId",
+    }
+  }
+
+  // Extract service name as label (required by Loki)
+  stage.labels {
+    values = {
+      service = "",
+      level   = "",
+    }
+  }
+
+  // Parse RFC3339 timestamp
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+    fallback_formats = ["2006-01-02T15:04:05.999Z"]
+  }
+
+  // Use message as output
+  stage.output {
+    source = "message"
+  }
+}
+
+// Write logs to Loki
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

@@ -1,0 +1,27 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  logging:
+    loglevel: debug
+  otlphttp:
+    endpoint: http://tempo:4318
+
+processors:
+  batch:
+    send_batch_size: 100
+    timeout: 10s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, otlphttp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]

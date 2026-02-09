@@ -1,0 +1,12 @@
+{{- if and .Values.enabled .Values.alloy.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  config.alloy: |
+{{ .Values.alloy.config | indent 4 }}
+{{- end }}

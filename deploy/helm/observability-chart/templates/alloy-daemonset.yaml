@@ -1,0 +1,81 @@
+{{- if and .Values.enabled .Values.alloy.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: alloy
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+    app: alloy
+spec:
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+        {{- include "observability.labels" . | nindent 8 }}
+      {{- with .Values.alloy.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: alloy
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      containers:
+      - name: alloy
+        image: "{{ .Values.alloy.image.repository }}:{{ .Values.alloy.image.tag }}"
+        imagePullPolicy: {{ .Values.alloy.image.pullPolicy }}
+        args:
+          - run
+          - /etc/alloy/config.alloy
+          - --server.http.listen-addr=0.0.0.0:12345
+          - --storage.path=/var/lib/alloy/data
+        ports:
+        - name: http
+          containerPort: 12345
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alloy
+        - name: varlib
+          mountPath: /var/lib/alloy
+        {{- if eq .Values.alloy.deploymentType "daemonset" }}
+        # For Docker socket access (when running on Docker nodes)
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        {{- end }}
+        resources:
+          {{- toYaml .Values.alloy.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: alloy-config
+      - name: varlib
+        emptyDir: {}
+      {{- if eq .Values.alloy.deploymentType "daemonset" }}
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      {{- end }}
+{{- end }}

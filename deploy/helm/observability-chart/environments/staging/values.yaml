@@ -1,0 +1,22 @@
+# Staging environment values for observability stack
+
+prometheus:
+  storage:
+    size: 10Gi
+    retentionDays: 7
+
+grafana:
+  admin:
+    password: staging-grafana-password  # Should be overridden via GitHub secret
+  service:
+    nodePort: 30030
+
+loki:
+  storage:
+    size: 20Gi
+    retentionDays: 14
+
+tempo:
+  storage:
+    size: 20Gi
+    retentionDays: 7

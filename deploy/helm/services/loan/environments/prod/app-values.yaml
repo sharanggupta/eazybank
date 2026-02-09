@@ -15,7 +15,10 @@ app:
     contactEmail: support@loan.eazybank.com
     contactNumber: "+1-555-0301"
     message: Welcome to EazyBank Loan Service
-  env: {}
+  observability:
+    enabled: true
+    samplingRate: "0.01"
+    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
 
 postgresql:
   credentials:

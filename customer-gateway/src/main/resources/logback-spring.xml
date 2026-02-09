@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+	<springProperty scope="context" name="springAppName" source="spring.application.name"/>
+	<springProperty scope="context" name="springEnvironment" source="spring.profiles.active" defaultValue="dev"/>
+
+	<!-- JSON appender for all environments -->
+	<appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder">
+			<customFields>{"service":"${springAppName}","environment":"${springEnvironment}"}</customFields>
+			<fieldNames>
+				<timestamp>timestamp</timestamp>
+				<message>message</message>
+				<logger>logger</logger>
+				<thread>thread</thread>
+				<level>level</level>
+				<levelValue>[ignore]</levelValue>
+			</fieldNames>
+			<includeMdcKeyName>traceId</includeMdcKeyName>
+			<includeMdcKeyName>spanId</includeMdcKeyName>
+		</encoder>
+	</appender>
+
+	<!-- Root logger - JSON output to console (captured by docker) -->
+	<root level="INFO">
+		<appender-ref ref="CONSOLE_JSON"/>
+	</root>
+
+	<!-- Service-specific log levels if needed -->
+	<logger name="org.springframework" level="WARN"/>
+	<logger name="org.springframework.web" level="DEBUG"/>
+	<logger name="org.springframework.cloud.gateway" level="DEBUG"/>
+	<logger name="io.github.resilience4j" level="DEBUG"/>
+
+</configuration>

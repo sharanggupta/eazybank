@@ -15,7 +15,10 @@ app:
     contactEmail: dev-support@account.service.local
     contactNumber: "+1-555-0001"
     message: Welcome to EazyBank Account Service (Dev)
-  env: {}
+  observability:
+    enabled: true
+    samplingRate: "1.0"
+    otlpEndpoint: "http://otel-collector:4318/v1/traces"
 
 postgresql:
   credentials:

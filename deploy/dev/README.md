@@ -112,6 +112,79 @@ curl http://localhost:8000/api/customer/{id}/loan    # Get loan
 - Card: http://localhost:9000/card/swagger-ui.html
 - Loan: http://localhost:8090/loan/swagger-ui.html
 
+## Testing Observability (Traces, Metrics, Logs)
+
+Complete observability stack runs with Docker Compose. After `docker compose up -d`, verify all components are healthy.
+
+### Generate Test Traces
+
+Create a customer (calls all 4 services):
+```bash
+curl -X POST http://localhost:8000/api/customer/onboard \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "mobileNumber": "9876543210"
+  }'
+```
+
+Or fetch customer details:
+```bash
+curl http://localhost:8000/api/customer/details/9876543210
+```
+
+### View Traces in Grafana
+
+1. **Access Grafana**: http://localhost:3000 (admin / admin)
+2. **Go to Explore** (left sidebar)
+3. **Select Tempo** datasource (top-left dropdown)
+4. **Select service**: `customer-gateway`, `account`, `card`, or `loan`
+5. **Run Query** - click green button
+6. **Click any trace** to see full request flow across services
+
+Each trace shows:
+- All participating services with timing
+- HTTP methods, URLs, status codes
+- Trace ID and span hierarchy
+- Service dependency chain
+
+### View Metrics
+
+1. **Go to Explore** in Grafana
+2. **Select Prometheus** datasource
+3. **Sample queries**:
+   ```
+   rate(http_server_requests_seconds_count[5m])  # Request rate
+   histogram_quantile(0.95, http_server_requests_seconds_bucket)  # P95 latency
+   ```
+
+### View Logs
+
+1. **Go to Explore** in Grafana
+2. **Select Loki** datasource
+3. **Query by service**: `{service="account"}`
+4. **Or by trace**: `{traceId="<trace-id-from-tempo>"}`
+
+### Verify Components
+
+Check traces are flowing:
+```bash
+docker compose logs otel-collector | grep "ResourceSpans"
+```
+
+Check metrics are scraped:
+```bash
+curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets | length'
+```
+
+Check logs are aggregated:
+```bash
+curl 'http://localhost:3100/loki/api/v1/query?query={service="account"}' | jq '.data.result | length'
+```
+
+---
+
 ## Next Steps
 
 - **API Examples & Testing**: See [api-examples.md](api-examples.md)

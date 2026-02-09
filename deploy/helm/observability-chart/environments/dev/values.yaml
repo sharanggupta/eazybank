@@ -1,0 +1,22 @@
+# Development environment values for observability stack
+
+prometheus:
+  storage:
+    size: 2Gi
+    retentionDays: 1
+
+grafana:
+  admin:
+    password: admin
+  service:
+    nodePort: 30030
+
+loki:
+  storage:
+    size: 5Gi
+    retentionDays: 1
+
+tempo:
+  storage:
+    size: 5Gi
+    retentionDays: 1

@@ -6,6 +6,10 @@ app:
     profiles: dev
   build:
     version: 0.0.1
+  observability:
+    enabled: true
+    samplingRate: "1.0"
+    otlpEndpoint: "http://otel-collector:4318/v1/traces"
   env:
     SERVICES_ACCOUNT_URL: "http://account:8080"
     SERVICES_CARD_URL: "http://card:9000"

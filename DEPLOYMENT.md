@@ -60,6 +60,22 @@ nano deploy/helm/services/customer-gateway/environments/staging/k8s-values.yaml
 kubectl scale deployment customer-gateway --replicas=3 -n eazybank-staging
 ```
 
+### Monitor with Grafana
+
+The observability stack (Prometheus, Grafana, Loki, Tempo) deploys to `otel` namespace:
+
+```bash
+# Port-forward Grafana
+kubectl port-forward -n otel svc/grafana 3000:3000
+# Visit http://localhost:3000 (admin / admin)
+
+# Check all observability components
+kubectl get pods -n otel
+kubectl get svc -n otel
+```
+
+View traces, metrics, and logs in Grafana Explore tab.
+
 ### Access the Gateway
 
 The gateway is the only externally exposed service (NodePort). Backend services use ClusterIP and are only reachable within the cluster.

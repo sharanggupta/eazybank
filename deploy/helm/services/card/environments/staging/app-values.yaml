@@ -15,7 +15,10 @@ app:
     contactEmail: staging-support@card.service.local
     contactNumber: "+1-555-0200"
     message: Welcome to EazyBank Card Service (Staging)
-  env: {}
+  observability:
+    enabled: true
+    samplingRate: "0.1"
+    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
 
 postgresql:
   credentials:

@@ -62,10 +62,27 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,circuitbreakers,circuitbreakerevents
+        include: health,info,metrics,prometheus,gateway,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
   health:
     circuitbreakers:
       enabled: true
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
 
 logging:
   level:

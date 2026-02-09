@@ -16,7 +16,29 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,conditions
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  metrics:
+    export:
+      otlp:
+        enabled: false
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
 app:
   build:
     version: 1.0.0

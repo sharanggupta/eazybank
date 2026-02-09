@@ -1,0 +1,69 @@
+{{- if and .Values.enabled .Values.tempo.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tempo
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+    app: tempo
+spec:
+  serviceName: tempo
+  replicas: {{ .Values.tempo.replicas }}
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+        {{- include "observability.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: tempo
+        image: "{{ .Values.tempo.image.repository }}:{{ .Values.tempo.image.tag }}"
+        imagePullPolicy: {{ .Values.tempo.image.pullPolicy }}
+        ports:
+        - name: otlp
+          containerPort: 4318
+          protocol: TCP
+        - name: metrics
+          containerPort: 3100
+          protocol: TCP
+        args:
+          - -config.file=/etc/tempo/tempo-config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        - name: storage
+          mountPath: /var/tempo
+        resources:
+          {{- toYaml .Values.tempo.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: metrics
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-config
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.persistence.storageClass }}
+      storageClassName: {{ .Values.persistence.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.tempo.storage.size }}
+{{- end }}

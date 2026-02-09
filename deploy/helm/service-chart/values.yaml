@@ -25,6 +25,10 @@ app:
     contactName: ""
     contactEmail: ""
     message: ""
+  observability:
+    enabled: true
+    samplingRate: "1.0"
+    otlpEndpoint: "http://otel-collector:4318/v1/traces"
   env: {}
 
 # Kubernetes configuration

@@ -1,0 +1,71 @@
+{{- if and .Values.enabled .Values.prometheus.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+    app: prometheus
+spec:
+  serviceName: prometheus
+  replicas: {{ .Values.prometheus.replicas }}
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        {{- include "observability.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: prometheus
+      containers:
+      - name: prometheus
+        image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
+        imagePullPolicy: {{ .Values.prometheus.image.pullPolicy }}
+        ports:
+        - name: web
+          containerPort: 9090
+          protocol: TCP
+        args:
+          - --config.file=/etc/prometheus/prometheus.yml
+          - --storage.tsdb.path=/prometheus
+          - --storage.tsdb.retention.time={{ .Values.prometheus.storage.retentionDays }}d
+          - --web.console.libraries=/etc/prometheus/console_libraries
+          - --web.console.templates=/etc/prometheus/consoles
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: storage
+          mountPath: /prometheus
+        resources:
+          {{- toYaml .Values.prometheus.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: web
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: web
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.persistence.storageClass }}
+      storageClassName: {{ .Values.persistence.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.prometheus.storage.size }}
+{{- end }}

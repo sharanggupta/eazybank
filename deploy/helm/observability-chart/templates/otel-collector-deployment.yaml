@@ -1,0 +1,56 @@
+{{- if and .Values.enabled .Values.otelCollector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+    app: otel-collector
+spec:
+  replicas: {{ .Values.otelCollector.replicas }}
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        {{- include "observability.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+      - name: otel-collector
+        image: "{{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}"
+        imagePullPolicy: {{ .Values.otelCollector.image.pullPolicy }}
+        ports:
+        - name: otlp
+          containerPort: {{ .Values.otelCollector.service.ports.otlpHttp }}
+          protocol: TCP
+        - name: prometheus
+          containerPort: {{ .Values.otelCollector.service.ports.prometheus }}
+          protocol: TCP
+        args:
+          - --config=/etc/otel-collector-config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc
+        resources:
+          {{- toYaml .Values.otelCollector.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: otlp
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: otlp
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config
+{{- end }}
