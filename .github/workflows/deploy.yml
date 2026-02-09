@@ -160,9 +160,17 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      - name: Create namespace
+      - name: Create namespaces
         run: |
           kubectl create namespace eazybank-staging --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace otel --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy observability stack to staging (FIRST)
+        run: |
+          helm upgrade --install observability ./deploy/helm/observability-chart \
+            --namespace otel \
+            --wait --timeout 5m \
+            -f ./deploy/helm/observability-chart/environments/staging/values.yaml
 
       - name: Deploy account to staging
         run: |
@@ -217,10 +225,27 @@ jobs:
       - name: Verify staging deployment
         run: |
           kubectl get all -n eazybank-staging
-          kubectl wait --for=condition=Ready pod \
+
+          # Wait for pods with better error reporting
+          if ! kubectl wait --for=condition=Ready pod \
             -l app.kubernetes.io/instance \
             -n eazybank-staging \
-            --timeout=300s || echo "Some pods still starting"
+            --timeout=300s; then
+            echo "⚠️ Some pods failed to start. Gathering diagnostics..."
+            echo ""
+            echo "### Pod Status:"
+            kubectl get pods -n eazybank-staging -o wide
+            echo ""
+            echo "### Failed Pod Logs:"
+            for pod in $(kubectl get pods -n eazybank-staging -o name | grep -v Running); do
+              echo "Logs for $pod:"
+              kubectl logs $pod -n eazybank-staging --all-containers=true --tail=50 || true
+            done
+            echo ""
+            echo "### Recent Events:"
+            kubectl get events -n eazybank-staging --sort-by='.lastTimestamp' | tail -20
+            exit 1
+          fi
 
       - name: Staging deployment summary
         run: |
@@ -296,9 +321,17 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      - name: Create namespace
+      - name: Create namespaces
         run: |
           kubectl create namespace eazybank-prod --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace otel --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy observability stack to production (FIRST)
+        run: |
+          helm upgrade --install observability ./deploy/helm/observability-chart \
+            --namespace otel \
+            --wait --timeout 5m \
+            -f ./deploy/helm/observability-chart/environments/prod/values.yaml
 
       - name: Deploy account to production
         run: |
@@ -353,10 +386,27 @@ jobs:
       - name: Verify production deployment
         run: |
           kubectl get all -n eazybank-prod
-          kubectl wait --for=condition=Ready pod \
+
+          # Wait for pods with better error reporting
+          if ! kubectl wait --for=condition=Ready pod \
             -l app.kubernetes.io/instance \
             -n eazybank-prod \
-            --timeout=300s || echo "Some pods still starting"
+            --timeout=300s; then
+            echo "⚠️ Some pods failed to start. Gathering diagnostics..."
+            echo ""
+            echo "### Pod Status:"
+            kubectl get pods -n eazybank-prod -o wide
+            echo ""
+            echo "### Failed Pod Logs:"
+            for pod in $(kubectl get pods -n eazybank-prod -o name | grep -v Running); do
+              echo "Logs for $pod:"
+              kubectl logs $pod -n eazybank-prod --all-containers=true --tail=50 || true
+            done
+            echo ""
+            echo "### Recent Events:"
+            kubectl get events -n eazybank-prod --sort-by='.lastTimestamp' | tail -20
+            exit 1
+          fi
 
       - name: Production deployment summary
         run: |

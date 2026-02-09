@@ -84,7 +84,7 @@ Generate datasource URL
 {{- if .Values.app.datasource.url }}
 {{- .Values.app.datasource.url }}
 {{- else if .Values.postgresql.enabled }}
-{{- printf "jdbc:postgresql://%s:5432/%s" (include "eazybank-service.postgresql.fullname" .) .Values.postgresql.database }}
+{{- printf "r2dbc:postgresql://%s:5432/%s" (include "eazybank-service.postgresql.fullname" .) .Values.postgresql.database }}
 {{- else }}
 {{- fail "Either app.datasource.url or postgresql.enabled must be set" }}
 {{- end }}
