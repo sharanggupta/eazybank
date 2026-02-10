@@ -9,7 +9,7 @@ app:
   observability:
     enabled: true
     samplingRate: "0.01"
-    otlpEndpoint: "http://otel-collector.otel:4318/v1/traces"
+    otlpEndpoint: "http://otel-collector.otel:4318"
   env:
     SERVICES_ACCOUNT_URL: "http://account:8080"
     SERVICES_CARD_URL: "http://card:9000"
