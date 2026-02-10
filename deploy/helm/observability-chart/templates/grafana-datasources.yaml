@@ -1,0 +1,39 @@
+{{- if and .Values.enabled .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+    {{- if .Values.grafana.datasources.prometheus.enabled }}
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: {{ .Values.grafana.datasources.prometheus.url }}
+      isDefault: true
+      jsonData:
+        timeInterval: 30s
+    {{- end }}
+    {{- if .Values.grafana.datasources.loki.enabled }}
+    - name: Loki
+      type: loki
+      access: proxy
+      url: {{ .Values.grafana.datasources.loki.url }}
+      jsonData:
+        maxLines: 1000
+    {{- end }}
+    {{- if .Values.grafana.datasources.tempo.enabled }}
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: {{ .Values.grafana.datasources.tempo.url }}
+      jsonData:
+        tracesToMetrics:
+          datasourceUid: prometheus
+    {{- end }}
+{{- end }}

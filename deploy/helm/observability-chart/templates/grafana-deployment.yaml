@@ -46,12 +46,10 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/grafana
-        - name: provisioning
-          mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
-          subPath: datasources.yaml
-        - name: provisioning
-          mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
-          subPath: dashboards.yaml
+        - name: datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
         - name: storage
           mountPath: /var/lib/grafana
         resources:
@@ -72,9 +70,12 @@ spec:
       - name: config
         configMap:
           name: grafana-config
-      - name: provisioning
+      - name: datasources
         configMap:
-          name: grafana-provisioning
+          name: grafana-datasources
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards
       - name: storage
         persistentVolumeClaim:
           claimName: grafana-pvc
