@@ -59,7 +59,7 @@ data:
     mode = console
     level = info
 
-    [alerting]
+    [unified_alerting]
     enabled = true
     execute_alerts = true
 {{- end }}
