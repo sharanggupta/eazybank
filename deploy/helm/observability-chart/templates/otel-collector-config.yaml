@@ -28,7 +28,7 @@ data:
         loglevel: {{ .Values.otelCollector.config.exporters.logging.loglevel }}
 
       otlphttp/tempo:
-        endpoint: http://tempo:{{ .Values.tempo.service.ports.otlp }}/v1/traces
+        endpoint: http://tempo:{{ .Values.tempo.service.ports.otlp }}
 
       prometheus:
         endpoint: "0.0.0.0:{{ .Values.otelCollector.service.ports.prometheus }}"
