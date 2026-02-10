@@ -36,7 +36,7 @@ spec:
         - name: config
           mountPath: /etc/tempo
         - name: storage
-          mountPath: /var/tempo
+          mountPath: /tmp/tempo
         resources:
           {{- toYaml .Values.tempo.resources | nindent 10 }}
         livenessProbe:

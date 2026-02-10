@@ -19,6 +19,9 @@ spec:
         {{- include "observability.labels" . | nindent 8 }}
     spec:
       serviceAccountName: otel-collector
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
       containers:
       - name: otel-collector
         image: "{{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}"
