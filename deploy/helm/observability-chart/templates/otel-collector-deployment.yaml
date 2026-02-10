@@ -42,6 +42,9 @@ spec:
         - name: prometheus
           containerPort: {{ .Values.otelCollector.service.ports.prometheus }}
           protocol: TCP
+        - name: health
+          containerPort: 13133
+          protocol: TCP
         args:
           - --config=/conf/otel-collector-config.yaml
         volumeMounts:
@@ -54,13 +57,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: otlp
+            port: health
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
-            port: otlp
+            port: health
           initialDelaySeconds: 10
           periodSeconds: 5
       volumes:
