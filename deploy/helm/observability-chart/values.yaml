@@ -7,6 +7,9 @@ namespace: otel
 # Enable/disable entire stack
 enabled: true
 
+# Whether to create the namespace (set to false if kubectl creates it first)
+createNamespace: false
+
 # Prometheus Configuration
 prometheus:
   enabled: true
