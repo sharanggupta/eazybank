@@ -47,7 +47,11 @@ spec:
         - name: config
           mountPath: /etc/grafana
         - name: provisioning
-          mountPath: /etc/grafana/provisioning
+          mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
+          subPath: datasources.yaml
+        - name: provisioning
+          mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+          subPath: dashboards.yaml
         - name: storage
           mountPath: /var/lib/grafana
         resources:
