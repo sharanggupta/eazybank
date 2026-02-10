@@ -7,8 +7,8 @@ metadata:
 data:
   SPRING_PROFILES_ACTIVE: {{ .Values.app.spring.profiles | quote }}
   {{- if or .Values.app.datasource.url .Values.postgresql.enabled }}
-  SPRING_DATASOURCE_URL: {{ include "eazybank-service.datasourceUrl" . | quote }}
-  SPRING_DATASOURCE_USERNAME: {{ .Values.app.datasource.username | quote }}
+  SPRING_R2DBC_URL: {{ include "eazybank-service.datasourceUrl" . | quote }}
+  SPRING_R2DBC_USERNAME: {{ .Values.app.datasource.username | quote }}
   {{- end }}
   SERVER_PORT: {{ .Values.service.port | quote }}
   SERVER_SERVLET_CONTEXT_PATH: {{ .Values.service.contextPath | quote }}
