@@ -134,8 +134,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update version in pom.xml and values.yaml
+        env:
+          VERSION: ${{ needs.calculate-version.outputs.version }}
         run: |
-          VERSION="${{ needs.calculate-version.outputs.version }}"
           # Remove 'v' prefix for app version (e.g., v0.0.1 → 0.0.1)
           APP_VERSION=${VERSION#v}
           echo "Using version: $VERSION (app version: $APP_VERSION)"
@@ -173,7 +174,7 @@ jobs:
         with:
           context: ./${{ matrix.service }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ steps.semver.outputs.version }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ needs.calculate-version.outputs.version }}
           platforms: linux/amd64,linux/arm64
 
   # ===========================================================================
