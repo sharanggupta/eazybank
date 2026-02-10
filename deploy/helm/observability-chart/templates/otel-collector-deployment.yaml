@@ -26,6 +26,8 @@ spec:
       - name: otel-collector
         image: "{{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}"
         imagePullPolicy: {{ .Values.otelCollector.image.pullPolicy }}
+        securityContext:
+          readOnlyRootFilesystem: false
         ports:
         - name: otlp
           containerPort: {{ .Values.otelCollector.service.ports.otlpHttp }}
