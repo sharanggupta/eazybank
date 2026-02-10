@@ -9,37 +9,35 @@ metadata:
 data:
   tempo-config.yaml: |
     server:
-      http_listen_port: 3100
+      http_listen_port: 3200
       log_level: info
 
     distributor:
-      rate_limit_bytes: 10000000
+      receivers:
+        otlp:
+          protocols:
+            http:
+              endpoint: 0.0.0.0:4318
+            grpc:
+              endpoint: 0.0.0.0:4317
 
-    receivers:
-      otlp:
-        protocols:
-          http:
-            endpoint: 0.0.0.0:4318
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+      max_block_duration: 5m
+
+    querier:
+      frontend_worker:
+        frontend_address: ""
 
     storage:
       trace:
         backend: local
-        local:
-          path: /var/tempo/traces
         wal:
-          path: /var/tempo/wal
-        blocklist_poll: 15m
-
-    retention:
-      enabled: true
-      duration: {{ mul .Values.tempo.storage.retentionDays 24 }}h
-
-    metrics_generator:
-      registry:
-        enabled: true
-      storage:
-        path: /var/tempo/metrics-generator
-
-    memberlist:
-      node_name: '{{ "$(HOSTNAME)" }}'
+          path: /tmp/tempo/wal
+        local:
+          path: /tmp/tempo/blocks
 {{- end }}
