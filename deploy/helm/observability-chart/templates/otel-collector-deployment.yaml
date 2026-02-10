@@ -36,10 +36,10 @@ spec:
           containerPort: {{ .Values.otelCollector.service.ports.prometheus }}
           protocol: TCP
         args:
-          - --config=/etc/otel-collector-config.yaml
+          - --config=/conf/otel-collector-config.yaml
         volumeMounts:
         - name: config
-          mountPath: /etc
+          mountPath: /conf
         resources:
           {{- toYaml .Values.otelCollector.resources | nindent 10 }}
         livenessProbe:
