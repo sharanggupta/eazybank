@@ -15,7 +15,7 @@ prometheus:
   enabled: true
   image:
     repository: prom/prometheus
-    tag: latest
+    tag: v2.52.0
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -46,7 +46,7 @@ grafana:
   enabled: true
   image:
     repository: grafana/grafana
-    tag: latest
+    tag: "11.0.0"
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -92,7 +92,7 @@ loki:
   enabled: true
   image:
     repository: grafana/loki
-    tag: latest
+    tag: "2.8.0"
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -120,7 +120,7 @@ tempo:
   enabled: true
   image:
     repository: grafana/tempo
-    tag: latest
+    tag: "2.3.1"
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -149,7 +149,7 @@ otelCollector:
   enabled: true
   image:
     repository: otel/opentelemetry-collector-contrib
-    tag: latest
+    tag: "0.97.0"
     pullPolicy: IfNotPresent
 
   replicas: 2
@@ -206,7 +206,7 @@ alloy:
   enabled: true
   image:
     repository: grafana/alloy
-    tag: latest
+    tag: "v1.0.0"
     pullPolicy: IfNotPresent
 
   # DaemonSet (one per node)
