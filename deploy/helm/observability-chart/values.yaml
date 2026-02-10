@@ -222,21 +222,35 @@ alloy:
 
   # Configuration embedded as ConfigMap
   config: |
-    // Discover Docker containers (when running on Docker nodes)
-    discovery.docker "containers" {
-      host = "unix:///var/run/docker.sock"
-
-      filter {
-        name   = "name"
-        values = ["eazybank"]
-      }
+    // Discover Kubernetes pods
+    discovery.kubernetes "pods" {
+      role = "pod"
     }
 
-    // Scrape logs from EazyBank containers
-    loki.source.docker "eazybank" {
-      host       = "unix:///var/run/docker.sock"
-      targets    = discovery.docker.containers.targets
+    // Scrape logs from Kubernetes pods (EazyBank services)
+    loki.source.kubernetes "pods" {
+      targets    = discovery.kubernetes.pods.targets
+      forward_to = [loki.relabel.services.receiver]
+    }
+
+    // Relabel to only include EazyBank services
+    loki.relabel "services" {
       forward_to = [loki.process.parse_json.receiver]
+
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "app"
+      }
     }
 
     // Parse JSON logs and extract labels
@@ -258,7 +272,6 @@ alloy:
 
       stage.labels {
         values = {
-          service = "",
           level   = "",
         }
       }
@@ -266,7 +279,7 @@ alloy:
       stage.timestamp {
         source = "timestamp"
         format = "RFC3339Nano"
-        fallback_formats = ["2006-01-02T15:04:05.999Z"]
+        fallback_formats = ["2006-01-02T15:04:05.999Z", "2006-01-02T15:04:05Z07:00"]
       }
 
       stage.output {

@@ -47,11 +47,6 @@ spec:
           mountPath: /etc/alloy
         - name: varlib
           mountPath: /var/lib/alloy
-        {{- if eq .Values.alloy.deploymentType "daemonset" }}
-        # For Docker socket access (when running on Docker nodes)
-        - name: docker-sock
-          mountPath: /var/run/docker.sock
-        {{- end }}
         resources:
           {{- toYaml .Values.alloy.resources | nindent 10 }}
         livenessProbe:
@@ -72,10 +67,4 @@ spec:
           name: alloy-config
       - name: varlib
         emptyDir: {}
-      {{- if eq .Values.alloy.deploymentType "daemonset" }}
-      - name: docker-sock
-        hostPath:
-          path: /var/run/docker.sock
-          type: Socket
-      {{- end }}
 {{- end }}
