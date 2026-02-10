@@ -1,0 +1,65 @@
+{{- if and .Values.enabled .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  grafana.ini: |
+    [server]
+    root_url = http://localhost:3000
+    serve_from_sub_path = false
+    http_port = 3000
+    protocol = http
+    enforce_domain = false
+    enable_gzip = true
+
+    [security]
+    admin_user = {{ .Values.grafana.admin.username }}
+    cookie_secure = false
+    cookie_samesite = lax
+    disable_gravatar = true
+
+    [auth]
+    login_cookie_name = grafana_session
+    login_maximum_inactive_lifetime_duration = 720h
+    login_maximum_lifetime_duration = 720h
+
+    [auth.basic]
+    enabled = true
+
+    [auth.anonymous]
+    enabled = true
+    org_role = Viewer
+
+    [database]
+    type = sqlite3
+    host = localhost:5432
+    name = grafana
+    user = grafana
+    password = grafana
+    path = /var/lib/grafana/grafana.db
+    log_queries = false
+
+    [users]
+    allow_sign_up = false
+    auto_assign_org = true
+    auto_assign_org_id = 1
+    auto_assign_org_role = Viewer
+
+    [plugins]
+    allow_unsigned_plugins = true
+
+    [paths]
+    provisioning = /etc/grafana/provisioning
+
+    [log]
+    mode = console
+    level = info
+
+    [alerting]
+    enabled = true
+    execute_alerts = true
+{{- end }}

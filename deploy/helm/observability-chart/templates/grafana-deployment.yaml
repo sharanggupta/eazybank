@@ -39,7 +39,13 @@ spec:
           value: "false"
         - name: GF_PATHS_PROVISIONING
           value: /etc/grafana/provisioning
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: Viewer
         volumeMounts:
+        - name: config
+          mountPath: /etc/grafana
         - name: provisioning
           mountPath: /etc/grafana/provisioning
         - name: storage
@@ -59,6 +65,9 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 5
       volumes:
+      - name: config
+        configMap:
+          name: grafana-config
       - name: provisioning
         configMap:
           name: grafana-provisioning
