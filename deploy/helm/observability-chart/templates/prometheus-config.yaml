@@ -24,7 +24,7 @@ data:
       # OpenTelemetry Collector metrics
       - job_name: 'otel-collector'
         static_configs:
-          - targets: ['otel-collector:8888']
+          - targets: ['otel-collector:8889']
 
       # Microservices metrics (in eazybank-dev, eazybank-staging, eazybank-prod namespaces)
       - job_name: 'kubernetes-pods'
