@@ -7,7 +7,7 @@ metadata:
   labels:
     {{- include "observability.labels" . | nindent 4 }}
 data:
-  dashboards.yaml: |
+  dashboards/dashboards.yaml: |
     apiVersion: 1
     providers:
     - name: 'default'
@@ -19,7 +19,7 @@ data:
       options:
         path: /etc/grafana/provisioning/dashboards
 
-  datasources.yaml: |
+  datasources/datasources.yaml: |
     apiVersion: 1
     datasources:
     {{- if .Values.grafana.datasources.prometheus.enabled }}
