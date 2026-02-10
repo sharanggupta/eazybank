@@ -160,15 +160,15 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      - name: Create namespaces
+      - name: Create service namespace
         run: |
           kubectl create namespace eazybank-staging --dry-run=client -o yaml | kubectl apply -f -
-          kubectl create namespace otel --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy observability stack to staging (FIRST)
         run: |
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace otel \
+            --create-namespace \
             --wait --timeout 5m \
             -f ./deploy/helm/observability-chart/environments/staging/values.yaml
 
@@ -321,15 +321,15 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      - name: Create namespaces
+      - name: Create service namespace
         run: |
           kubectl create namespace eazybank-prod --dry-run=client -o yaml | kubectl apply -f -
-          kubectl create namespace otel --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy observability stack to production (FIRST)
         run: |
           helm upgrade --install observability ./deploy/helm/observability-chart \
             --namespace otel \
+            --create-namespace \
             --wait --timeout 5m \
             -f ./deploy/helm/observability-chart/environments/prod/values.yaml
 
