@@ -28,7 +28,7 @@ spec:
           containerPort: 4318
           protocol: TCP
         - name: metrics
-          containerPort: 3100
+          containerPort: 3200
           protocol: TCP
         args:
           - -config.file=/etc/tempo/tempo-config.yaml

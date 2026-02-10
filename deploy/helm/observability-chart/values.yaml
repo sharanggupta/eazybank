@@ -85,7 +85,7 @@ grafana:
       url: http://loki:3100
     tempo:
       enabled: true
-      url: http://tempo:3100
+      url: http://tempo:3200
 
 # Loki Configuration
 loki:
@@ -142,7 +142,7 @@ tempo:
     type: ClusterIP
     ports:
       otlp: 4318  # OTLP HTTP receiver
-      prometheus: 3100  # Prometheus metrics
+      prometheus: 3200  # Prometheus metrics
 
 # OpenTelemetry Collector Configuration
 otelCollector:
