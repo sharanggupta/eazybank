@@ -10,7 +10,7 @@ data:
   loki-config.yaml: |
     auth_enabled: false
 
-    # Single-instance mode
+    # Target all modules for single-instance mode
     target: all
 
     ingester:
