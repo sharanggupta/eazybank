@@ -17,6 +17,8 @@ data:
         protocols:
           http:
             endpoint: 0.0.0.0:{{ .Values.otelCollector.service.ports.otlpHttp }}
+          grpc:
+            endpoint: 0.0.0.0:{{ .Values.otelCollector.service.ports.otlpGrpc | default 4317 }}
 
     processors:
       batch:
