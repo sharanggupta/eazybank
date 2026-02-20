@@ -36,8 +36,11 @@ spec:
             drop:
             - ALL
         ports:
-        - name: otlp
+        - name: otlp-http
           containerPort: {{ .Values.otelCollector.service.ports.otlpHttp }}
+          protocol: TCP
+        - name: otlp-grpc
+          containerPort: {{ .Values.otelCollector.service.ports.otlpGrpc | default 4317 }}
           protocol: TCP
         - name: prometheus
           containerPort: {{ .Values.otelCollector.service.ports.prometheus }}

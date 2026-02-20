@@ -15,9 +15,13 @@ spec:
   type: {{ .Values.otelCollector.service.type }}
   ports:
   - port: {{ .Values.otelCollector.service.ports.otlpHttp }}
-    targetPort: otlp
+    targetPort: otlp-http
     protocol: TCP
-    name: otlp
+    name: otlp-http
+  - port: {{ .Values.otelCollector.service.ports.otlpGrpc | default 4317 }}
+    targetPort: otlp-grpc
+    protocol: TCP
+    name: otlp-grpc
   - port: {{ .Values.otelCollector.service.ports.prometheus }}
     targetPort: prometheus
     protocol: TCP

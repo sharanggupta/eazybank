@@ -29,9 +29,8 @@ data:
       logging:
         loglevel: {{ .Values.otelCollector.config.exporters.logging.loglevel }}
 
-      otlp/tempo:
-        endpoint: tempo:{{ .Values.tempo.service.ports.otlp }}
-        # gRPC protocol is default for OTLP
+      otlphttp/tempo:
+        endpoint: http://tempo.otel.svc.cluster.local:{{ .Values.tempo.service.ports.otlp }}
 
       prometheus:
         endpoint: "0.0.0.0:{{ .Values.otelCollector.service.ports.prometheus }}"
@@ -42,7 +41,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [logging, otlp/tempo]
+          exporters: [logging, otlphttp/tempo]
         metrics:
           receivers: [otlp]
           processors: [batch]
