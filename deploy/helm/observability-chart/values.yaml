@@ -166,6 +166,7 @@ otelCollector:
     type: ClusterIP
     ports:
       otlpHttp: 4318
+      otlpGrpc: 4317
       prometheus: 8889
     annotations: {}
 
@@ -189,7 +190,7 @@ otelCollector:
       logging:
         loglevel: debug
       otlphttp/tempo:
-        endpoint: tempo:4318
+        endpoint: http://tempo.otel.svc.cluster.local:4318
       prometheus:
         endpoint: "0.0.0.0:8889"
 

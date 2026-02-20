@@ -28,7 +28,7 @@ app:
   observability:
     enabled: true
     samplingRate: "1.0"
-    otlpEndpoint: "http://otel-collector:4318"
+    otlpEndpoint: "http://otel-collector.otel.svc.cluster.local:4318"
   env: {}
 
 # Kubernetes configuration
