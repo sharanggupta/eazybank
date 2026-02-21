@@ -57,6 +57,8 @@ spec:
           {{- if .Values.app.observability.enabled }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.app.observability.otlpEndpoint | quote }}
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "{{ .Values.app.observability.otlpEndpoint }}/v1/traces"
             - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
               value: {{ .Values.app.observability.samplingRate | quote }}
           {{- end }}
