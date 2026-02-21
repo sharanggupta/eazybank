@@ -8,7 +8,7 @@ app:
     version: 0.0.1
   observability:
     enabled: true
-    samplingRate: "0.1"
+    samplingRate: "1.0"
     otlpEndpoint: "http://otel-collector.otel.svc.cluster.local:4318"
   env:
     SERVICES_ACCOUNT_URL: "http://account:8080"
